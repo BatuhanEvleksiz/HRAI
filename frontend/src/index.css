@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   IKAI ATS - ANTIGRAVITY DESIGN SYSTEM
+   ============================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #eff4ff 50%, #eff6ff 100%);
+  color: #1e293b;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #bfd1ff;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8fb5ff;
+}
+
+/* Antigravity Card Base */
+@layer components {
+  .antigravity-card {
+    @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-antigravity 
+           transition-all duration-300 ease-out border border-white/50;
+  }
+
+  .antigravity-card:hover {
+    @apply shadow-antigravity-hover -translate-y-1;
+  }
+
+  .antigravity-card-static {
+    @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-antigravity-sm 
+           border border-white/50;
+  }
+
+  .antigravity-button {
+    @apply px-6 py-2.5 rounded-xl font-semibold text-white
+           bg-primary-500 hover:bg-primary-600
+           shadow-lg shadow-primary-500/25
+           transition-all duration-200 ease-out
+           hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary-500/30
+           active:translate-y-0 active:shadow-md;
+  }
+
+  .antigravity-input {
+    @apply w-full px-4 py-2.5 rounded-xl bg-surface-50 border border-surface-200
+           focus:border-primary-400 focus:ring-2 focus:ring-primary-100
+           outline-none transition-all duration-200
+           placeholder:text-surface-300 text-sm;
+  }
+
+  .antigravity-select {
+    @apply w-full px-4 py-2.5 rounded-xl bg-surface-50 border border-surface-200
+           focus:border-primary-400 focus:ring-2 focus:ring-primary-100
+           outline-none transition-all duration-200 text-sm cursor-pointer
+           appearance-none;
+  }
+
+  .pill {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+           transition-all duration-200;
+  }
+
+  .pill-green {
+    @apply bg-success-50 text-success-600 border border-success-400/30;
+  }
+
+  .pill-yellow {
+    @apply bg-warning-50 text-warning-600 border border-warning-400/30;
+  }
+
+  .pill-red {
+    @apply bg-danger-50 text-danger-600 border border-danger-400/30;
+  }
+
+  .pill-blue {
+    @apply bg-primary-50 text-primary-600 border border-primary-400/30;
+  }
+
+  .pill-purple {
+    @apply bg-language-50 text-language-500 border border-language-400/30;
+  }
+
+  .score-badge {
+    @apply text-3xl font-extrabold bg-clip-text text-transparent;
+  }
+
+  .score-badge-high {
+    @apply bg-gradient-to-r from-success-500 to-success-400;
+  }
+
+  .score-badge-medium {
+    @apply bg-gradient-to-r from-warning-500 to-warning-400;
+  }
+
+  .score-badge-low {
+    @apply bg-gradient-to-r from-danger-500 to-danger-400;
+  }
+
+  .kanban-column {
+    @apply bg-white/40 backdrop-blur-sm rounded-2xl border-2 border-dashed
+           p-4 min-h-[500px] transition-all duration-300;
+  }
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #1b4ef5 0%, #3874ff 50%, #5996ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Sidebar gradient */
+.sidebar-gradient {
+  background: linear-gradient(180deg, #1b4ef5 0%, #3874ff 50%, #5996ff 100%);
+}
+
+/* Glassmorphism panel */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Score ring animation */
+@keyframes scoreReveal {
+  0% { stroke-dashoffset: 283; }
+}
+
+.score-ring {
+  animation: scoreReveal 1.5s ease-out forwards;
+}
+
+/* Chat message animation */
+@keyframes messageSlideIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.chat-message {
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+/* Kanban drag active state */
+.kanban-dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+}
+
+/* Progress bar animation */
+@keyframes progressFill {
+  0% { width: 0; }
+}
+
+.progress-bar-animated {
+  animation: progressFill 1s ease-out;
+}
