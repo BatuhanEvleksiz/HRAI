@@ -3,3 +3,5 @@ frontend/dist/
 backend/.env
 __pycache__/
 *.pyc
+.sites-stage/
+ikai-site.tar.gz
