@@ -36,7 +36,7 @@ def _is_uuid(value: str | None) -> bool:
         return False
 
 @router.post("/assistant/analyze")
-def analyze_interview_transcript(request: InterviewAnalysisRequest):
+async def analyze_interview_transcript(request: InterviewAnalysisRequest):
     transcript = request.transcript.strip()
     if not transcript:
         raise HTTPException(status_code=400, detail="Analiz için konuşma metni gerekli.")
