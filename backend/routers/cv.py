@@ -60,12 +60,19 @@ demo_candidate = {
 @router.post("/upload")
 async def upload_cv(file: UploadFile = File(...)):
     filename = file.filename
-    text = extract_text_from_pdf(await file.read())
+    file_bytes = await file.read()
+    try:
+        text = await asyncio.wait_for(
+            asyncio.to_thread(extract_text_from_pdf, file_bytes),
+            timeout=15,
+        )
+    except asyncio.TimeoutError:
+        text = "PDF metni zamanında çıkarılamadı."
     if not text:
         text = "Demo extracted text from PDF."
 
     try:
-        data = await asyncio.wait_for(asyncio.to_thread(analyze_cv, text), timeout=75)
+        data = await asyncio.wait_for(asyncio.to_thread(analyze_cv, text), timeout=20)
     except asyncio.TimeoutError:
         data = fallback_cv_analysis(text, filename)
     except Exception:

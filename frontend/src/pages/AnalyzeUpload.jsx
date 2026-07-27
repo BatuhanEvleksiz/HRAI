@@ -184,7 +184,7 @@ export default function AnalyzeUpload() {
 
             {selectedFile && <p className="text-sm text-primary-600 mt-3 truncate" title={selectedFile.name}>Seçilen dosya: {selectedFile.name}</p>}
             {isAnalyzing && <div className="max-w-md mx-auto mt-4 space-y-1.5">
-              <div className="flex justify-between text-xs text-gray-500"><span>{uploadProgress < 100 ? 'PDF yükleniyor...' : 'Gemini PDF içeriğini analiz ediyor...'}</span><span>%{uploadProgress}</span></div>
+              <div className="flex justify-between text-xs text-gray-500"><span>{uploadProgress < 100 ? 'PDF yükleniyor...' : 'PDF yüklendi, Gemini analiz ediyor...'}</span><span>%{uploadProgress}</span></div>
               <div className="h-2 rounded-full bg-surface-100 overflow-hidden"><div className="h-full rounded-full bg-primary-500 transition-all duration-200" style={{ width: `${Math.max(uploadProgress, 4)}%` }} /></div>
             </div>}
 
