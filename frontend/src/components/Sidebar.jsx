@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, FileSearch, FolderOpen, Target,
   CalendarDays, FileText, MessageCircle, Settings,
-  Brain
+  Brain, MessageSquareText
 } from 'lucide-react';
 
 const menuItems = [
@@ -12,6 +12,7 @@ const menuItems = [
   { path: '/candidates', label: 'Kayıtlı CV\'ler', icon: FolderOpen },
   { path: '/matching', label: 'Eşleşme Motoru', icon: Target },
   { path: '/interviews', label: 'Mülakatlar', icon: CalendarDays },
+  { path: '/interviews/assistant', label: 'Mülakat Asistanı', icon: MessageSquareText },
   { path: '/reports', label: 'Raporlar', icon: FileText },
   { path: '/assistant', label: 'İK Asistanı', icon: MessageCircle },
   { path: '/settings', label: 'Ayarlar', icon: Settings },

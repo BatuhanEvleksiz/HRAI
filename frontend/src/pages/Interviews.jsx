@@ -336,10 +336,10 @@ function InterviewAssistant({ interviews, candidates }) {
   );
 }
 
-export default function Interviews() {
+export default function Interviews({ defaultTab = 'schedule' }) {
   const { interviews, candidates, addInterview, updateInterview, moveInterview, deleteInterview } = useStore();
   const [showNewForm, setShowNewForm] = useState(false);
-  const [activeTab, setActiveTab] = useState('schedule');
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [newInterview, setNewInterview] = useState({
     candidate_id: '', candidate_name: '', position: '', interview_date: '', interview_time: '', notes: ''
   });

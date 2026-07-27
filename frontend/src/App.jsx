@@ -57,6 +57,7 @@ export default function App() {
             <Route path="/candidates" element={<SavedCVs />} />
             <Route path="/matching" element={<MatchingEngine />} />
             <Route path="/interviews" element={<Interviews />} />
+            <Route path="/interviews/assistant" element={<Interviews defaultTab="assistant" />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/assistant" element={<ChatAssistant />} />
             <Route path="/settings" element={<SettingsPage />} />
