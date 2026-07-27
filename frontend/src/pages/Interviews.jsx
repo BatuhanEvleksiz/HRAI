@@ -176,6 +176,10 @@ function InterviewAssistant({ interviews, candidates }) {
   const [analysisMode, setAnalysisMode] = useState('demo');
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState('');
   const [message, setMessage] = useState('');
   const recognitionRef = useRef(null);
 
@@ -211,21 +215,33 @@ function InterviewAssistant({ interviews, candidates }) {
     setMessage('Konuşma metne aktarıldı. Şimdi analiz modunu seçebilirsiniz.');
   };
 
-  const handleAudioUpload = async (event) => {
-    const file = event.target.files?.[0];
+  const uploadAudioFile = async (file) => {
     if (!file) return;
-    setIsProcessing(true);
-    setMessage('Ses dosyası transkripsiyon servisine gönderiliyor. Ses kalıcı olarak saklanmaz.');
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadedFileName(file.name);
+    setMessage('Ses dosyası yükleniyor. Ses kalıcı olarak saklanmaz.');
     try {
-      const result = await api.transcribeInterviewAudio(file);
+      const result = await api.transcribeInterviewAudio(file, setUploadProgress);
       setTranscript(result.transcript || '');
-      setMessage('Ses metne dönüştürüldü.');
+      setMessage('Ses metne dönüştürüldü. Artık analiz modunu seçebilirsiniz.');
     } catch (error) {
+      setUploadProgress(0);
       setMessage(error.message || 'Ses dosyası işlenemedi.');
     } finally {
-      setIsProcessing(false);
-      event.target.value = '';
+      setIsUploading(false);
     }
+  };
+
+  const handleAudioUpload = (event) => {
+    uploadAudioFile(event.target.files?.[0]);
+    event.target.value = '';
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragActive(false);
+    uploadAudioFile(event.dataTransfer.files?.[0]);
   };
 
   const analyze = async (mode) => {
@@ -302,12 +318,27 @@ function InterviewAssistant({ interviews, candidates }) {
           <span className="font-bold text-gray-900 block">{isRecording ? 'Canlı mülakatı durdur' : 'Canlı mülakat başlat'}</span>
           <span className="text-xs text-gray-500">Tarayıcı mikrofonundan Türkçe konuşmayı metne aktarır.</span>
         </button>
-        <label className="antigravity-card-static p-5 cursor-pointer hover:border-primary-300 transition-colors">
+        <div
+          onDragEnter={(event) => { event.preventDefault(); setIsDragActive(true); }}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={() => setIsDragActive(false)}
+          onDrop={handleDrop}
+          className={`antigravity-card-static p-5 transition-colors ${isDragActive ? 'border-primary-400 bg-primary-50/60' : 'hover:border-primary-300'}`}
+        >
           <Upload className="w-6 h-6 text-primary-500 mb-3" />
           <span className="font-bold text-gray-900 block">Kayıtlı ses dosyası yükle</span>
-          <span className="text-xs text-gray-500">WhisperX servisi bağlıysa ses dosyasını metne çevirir.</span>
-          <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" disabled={isProcessing} />
-        </label>
+          <span className="text-xs text-gray-500 block mt-1">Dosyayı buraya sürükleyin veya bilgisayardan seçin.</span>
+          <label className="inline-flex items-center gap-2 mt-3 px-3 py-2 rounded-lg text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 cursor-pointer">
+            <Upload className="w-3.5 h-3.5" /> Dosya seç
+            <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" disabled={isUploading || isProcessing} />
+          </label>
+          {uploadedFileName && <p className="text-xs text-gray-600 mt-3 truncate" title={uploadedFileName}>{uploadedFileName}</p>}
+          {isUploading && <div className="mt-3 space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] text-gray-500"><span>Yükleniyor...</span><span>%{uploadProgress}</span></div>
+            <div className="h-2 rounded-full bg-surface-100 overflow-hidden"><div className="h-full rounded-full bg-primary-500 transition-all duration-200" style={{ width: `${uploadProgress}%` }} /></div>
+          </div>}
+          {!isUploading && uploadedFileName && uploadProgress === 100 && <p className="text-xs text-success-600 mt-2">Yükleme tamamlandı</p>}
+        </div>
       </div>
 
       <div className="antigravity-card-static p-5 space-y-4">
@@ -317,8 +348,8 @@ function InterviewAssistant({ interviews, candidates }) {
         </div>
         <textarea value={transcript} onChange={e => setTranscript(e.target.value)} className="antigravity-input min-h-[180px] resize-y" placeholder="Canlı kayıt veya ses dosyası sonrası konuşma burada görünür..." />
         <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={() => analyze('demo')} disabled={isProcessing} className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> Demo analizi</button>
-          <button type="button" onClick={() => analyze('llm')} disabled={isProcessing} className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> LLM ile analiz et</button>
+          <button type="button" onClick={() => analyze('demo')} disabled={isProcessing || isUploading} className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> Demo analizi</button>
+          <button type="button" onClick={() => analyze('llm')} disabled={isProcessing || isUploading || !transcript.trim()} className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> LLM ile analiz et</button>
           {isProcessing && <Loader2 className="w-5 h-5 text-primary-500 animate-spin self-center" />}
         </div>
       </div>
