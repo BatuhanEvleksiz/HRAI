@@ -1,4 +1,5 @@
-from fastapi import APIRouter, File, HTTPException, UploadFile
+import asyncio
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from models import InterviewCreate, InterviewUpdate, InterviewAnalysisRequest, InterviewAnalysisCreate
 from database import get_supabase
 from services.gemini_service import analyze_interview
@@ -41,7 +42,18 @@ def analyze_interview_transcript(request: InterviewAnalysisRequest):
         raise HTTPException(status_code=400, detail="Analiz için konuşma metni gerekli.")
     if request.mode not in {"demo", "llm"}:
         raise HTTPException(status_code=400, detail="Analiz modu demo veya llm olmalı.")
-    return {**analyze_interview(transcript, request.mode), "analysis_mode": request.mode}
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(analyze_interview, transcript, request.mode),
+            timeout=75,
+        )
+        return {**result, "analysis_mode": request.mode}
+    except asyncio.TimeoutError:
+        return {
+            **analyze_interview(transcript, "demo"),
+            "analysis_mode": "demo",
+            "warning": "LLM yanıtı zaman aşımına uğradı; tokensız demo analiz döndürüldü.",
+        }
 
 @router.post("/assistant/transcribe")
 async def transcribe_interview_audio(file: UploadFile = File(...)):
@@ -52,6 +64,30 @@ async def transcribe_interview_audio(file: UploadFile = File(...)):
         raise HTTPException(status_code=503, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Ses transkripsiyonu başarısız: {exc}")
+
+@router.post("/assistant/analyze-audio")
+async def analyze_interview_audio(
+    file: UploadFile = File(...),
+    mode: str = Form("llm"),
+    interview_id: str | None = Form(None),
+    candidate_id: str | None = Form(None),
+):
+    if mode != "llm":
+        raise HTTPException(status_code=400, detail="Sesli mülakat için LLM modu gerekli.")
+    try:
+        transcript = await asyncio.wait_for(
+            transcribe_audio(await file.read(), file.filename or "interview-audio"),
+            timeout=90,
+        )
+        result = await asyncio.wait_for(
+            asyncio.to_thread(analyze_interview, transcript, "llm"),
+            timeout=75,
+        )
+        return {**result, "transcript": transcript, "analysis_mode": "llm", "interview_id": interview_id, "candidate_id": candidate_id}
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Sesli mülakat LLM analizinde zaman aşımı oluştu.")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Sesli mülakat analiz edilemedi: {exc}")
 
 @router.post("/assistant/save")
 def save_interview_analysis(analysis: InterviewAnalysisCreate):

@@ -180,6 +180,7 @@ function InterviewAssistant({ interviews, candidates }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragActive, setIsDragActive] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState('');
+  const [audioFile, setAudioFile] = useState(null);
   const [message, setMessage] = useState('');
   const recognitionRef = useRef(null);
 
@@ -220,6 +221,7 @@ function InterviewAssistant({ interviews, candidates }) {
     setIsUploading(true);
     setUploadProgress(0);
     setUploadedFileName(file.name);
+    setAudioFile(file);
     setMessage('Ses dosyası yükleniyor. Ses kalıcı olarak saklanmaz.');
     try {
       const result = await api.transcribeInterviewAudio(file, setUploadProgress);
@@ -245,21 +247,32 @@ function InterviewAssistant({ interviews, candidates }) {
   };
 
   const analyze = async (mode) => {
+    if (mode === 'llm' && !transcript.trim() && !audioFile) {
+      setMessage('Önce canlı kayıt başlatın veya bir ses dosyası yükleyin.');
+      return;
+    }
     const source = transcript.trim() || DEMO_TRANSCRIPT;
     setTranscript(source);
     setAnalysisMode(mode);
     setIsProcessing(true);
     setMessage(mode === 'llm' ? 'LLM özeti ve değerlendirmesi hazırlanıyor...' : 'Demo analiz hazırlanıyor...');
     try {
-      const result = await api.analyzeInterview({
-        transcript: source,
-        interview_id: selectedInterviewId || null,
-        candidate_id: selectedInterview?.candidate_id || null,
-        mode,
-      });
+      const result = mode === 'llm' && !transcript.trim() && audioFile
+        ? await api.analyzeInterviewAudio(audioFile, {
+          interview_id: selectedInterviewId,
+          candidate_id: selectedInterview?.candidate_id,
+          mode,
+        })
+        : await api.analyzeInterview({
+          transcript: source,
+          interview_id: selectedInterviewId || null,
+          candidate_id: selectedInterview?.candidate_id || null,
+          mode,
+        });
       setSummary(result.summary || '');
       setEvaluation(result.general_evaluation || '');
-      setMessage(`${mode === 'llm' ? 'LLM' : 'Demo'} analizi hazır.`);
+      setTranscript(result.transcript || source);
+      setMessage(result.warning || `${mode === 'llm' ? 'LLM' : 'Demo'} analizi hazır.`);
     } catch (error) {
       setMessage(error.message || 'Analiz yapılamadı.');
     } finally {
@@ -349,7 +362,7 @@ function InterviewAssistant({ interviews, candidates }) {
         <textarea value={transcript} onChange={e => setTranscript(e.target.value)} className="antigravity-input min-h-[180px] resize-y" placeholder="Canlı kayıt veya ses dosyası sonrası konuşma burada görünür..." />
         <div className="flex flex-wrap gap-3">
           <button type="button" onClick={() => analyze('demo')} disabled={isProcessing || isUploading} className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> Demo analizi</button>
-          <button type="button" onClick={() => analyze('llm')} disabled={isProcessing || isUploading || !transcript.trim()} className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> LLM ile analiz et</button>
+          <button type="button" onClick={() => analyze('llm')} disabled={isProcessing || isUploading} className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> LLM ile analiz et</button>
           {isProcessing && <Loader2 className="w-5 h-5 text-primary-500 animate-spin self-center" />}
         </div>
       </div>

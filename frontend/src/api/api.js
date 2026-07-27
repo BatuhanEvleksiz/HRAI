@@ -1,6 +1,8 @@
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 async function request(url, options = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90000);
   try {
     const response = await fetch(`${API_BASE}${url}`, {
       headers: {
@@ -8,6 +10,7 @@ async function request(url, options = {}) {
         ...options.headers,
       },
       ...options,
+      signal: options.signal || controller.signal,
     });
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
@@ -16,6 +19,8 @@ async function request(url, options = {}) {
   } catch (error) {
     console.error('API request failed:', error);
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -60,6 +65,21 @@ export const api = {
   updateInterviewStatus: (id, status) => request(`/interviews/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
   deleteInterview: (id) => request(`/interviews/${id}`, { method: 'DELETE' }),
   analyzeInterview: (data) => request('/interviews/assistant/analyze', { method: 'POST', body: JSON.stringify(data) }),
+  analyzeInterviewAudio: async (file, data = {}) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    Object.entries(data).forEach(([key, value]) => formData.append(key, value || ''));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 150000);
+    try {
+      const response = await fetch(`${API_BASE}/interviews/assistant/analyze-audio`, { method: 'POST', body: formData, signal: controller.signal });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || 'Sesli mülakat analiz edilemedi.');
+      return result;
+    } finally {
+      clearTimeout(timeout);
+    }
+  },
   transcribeInterviewAudio: (file, onProgress) => new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append('file', file);
