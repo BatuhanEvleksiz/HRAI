@@ -11,7 +11,7 @@ class CandidateCreate(BaseModel):
     experience_years: Optional[int] = 0
     skills: List[str] = []
     languages: List[Dict[str, str]] = [] # {language, level}
-    projects: List[Dict[str, str]] = [] # {title, description, technologies}
+    projects: List[Dict[str, Any]] = [] # {title, description, technologies}
     ai_summary: Optional[str] = None
     raw_cv_text: Optional[str] = None
     original_filename: Optional[str] = None
@@ -25,7 +25,7 @@ class CandidateUpdate(BaseModel):
     experience_years: Optional[int] = None
     skills: Optional[List[str]] = None
     languages: Optional[List[Dict[str, str]]] = None
-    projects: Optional[List[Dict[str, str]]] = None
+    projects: Optional[List[Dict[str, Any]]] = None
     ai_summary: Optional[str] = None
     status: Optional[str] = None
 
