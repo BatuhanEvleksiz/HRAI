@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from database import get_database_status
 
 from routers import dashboard, cv, matching, interviews, reports, chatbot, settings
 
@@ -24,3 +25,7 @@ app.include_router(settings.router, prefix="/api/settings")
 @app.get("/")
 def read_root():
     return {"status": "IKAI ATS API is running"}
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "database": get_database_status()}

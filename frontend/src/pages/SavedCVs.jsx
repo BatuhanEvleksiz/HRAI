@@ -43,14 +43,33 @@ export default function SavedCVs() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDelete = (id) => {
+  const handleDeleteLegacy = (id) => {
     if (window.confirm('Bu CV\'yi silmek istediğinize emin misiniz?')) {
       deleteCandidate(id);
     }
   };
 
-  const handleStatusChange = (id, newStatus) => {
+  const handleStatusChangeLegacy = (id, newStatus) => {
     updateCandidate(id, { status: newStatus });
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Bu CV silinsin mi?')) return;
+    try {
+      await api.deleteCandidate(id);
+      deleteCandidate(id);
+    } catch {
+      window.alert('CV veritabanından silinemedi.');
+    }
+  };
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await api.updateCandidate(id, { status: newStatus });
+      updateCandidate(id, { status: newStatus });
+    } catch {
+      window.alert('CV durumu veritabanında güncellenemedi.');
+    }
   };
 
   return (

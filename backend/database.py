@@ -14,3 +14,13 @@ def get_supabase() -> Client | None:
         except Exception:
             return None
     return None
+
+def get_database_status() -> dict:
+    client = get_supabase()
+    if not client:
+        return {"configured": False, "connected": False, "error": "SUPABASE_URL veya SUPABASE_KEY eksik."}
+    try:
+        client.table("candidates").select("id").limit(1).execute()
+        return {"configured": True, "connected": True}
+    except Exception as exc:
+        return {"configured": True, "connected": False, "error": str(exc)[:240]}

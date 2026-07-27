@@ -108,11 +108,7 @@ def save_candidate(candidate: CandidateCreate):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
     
-    c_dict["id"] = str(uuid.uuid4())
-    c_dict["status"] = "pending"
-    c_dict["created_at"] = datetime.now().isoformat()
-    c_dict["updated_at"] = datetime.now().isoformat()
-    return c_dict
+    raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; CV sahte olarak kaydedilmedi.")
 
 @router.get("/")
 def list_candidates(status: str = None):
@@ -125,7 +121,7 @@ def list_candidates(status: str = None):
             return q.execute().data
         except Exception:
             pass
-    return [demo_candidate]
+    raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; adaylar okunamadı.")
 
 @router.get("/{id}")
 def get_candidate(id: str):
