@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 api_key = os.getenv("GEMINI_API_KEY")
 if api_key and "your_" not in api_key:
     genai.configure(api_key=api_key)
@@ -23,7 +24,7 @@ def analyze_cv(text: str) -> dict:
         }
     
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel(GEMINI_MODEL)
         prompt = f"Extract structured data from the following CV. Return JSON with full_name, email, phone, profession, university, experience_years, skills (list of str), languages (list of dict with language, level), projects (list of dict with title, description, technologies), ai_summary.\n\n{text}"
         res = model.generate_content(prompt)
         text_res = res.text
@@ -38,7 +39,7 @@ def generate_match_comment(candidate: dict, requirements: dict, score: float) ->
         return f"Candidate scored {score}."
         
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel(GEMINI_MODEL)
         prompt = f"Write a short comment on why this candidate (score: {score}) fits these requirements: {requirements}. Candidate skills: {candidate.get('skills')}."
         res = model.generate_content(prompt)
         return res.text
@@ -50,7 +51,7 @@ def chat_with_db(user_message: str, schema_info: str) -> dict:
         return {"ai_response": "Demo response to: " + user_message, "generated_sql": None}
         
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel(GEMINI_MODEL)
         prompt = f"Schema: {schema_info}\nUser: {user_message}\nAnswer the user or generate SQL."
         res = model.generate_content(prompt)
         return {"ai_response": res.text, "generated_sql": None}
@@ -82,7 +83,7 @@ def analyze_interview(transcript: str, mode: str = "demo") -> dict:
         return demo_interview_analysis(transcript)
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel(GEMINI_MODEL)
         prompt = (
             "Aşağıdaki Türkçe iş mülakatı dökümünü değerlendir. Yalnızca JSON döndür: "
             "summary ve general_evaluation alanları olsun. Özette konuşmanın ana başlıklarını, "

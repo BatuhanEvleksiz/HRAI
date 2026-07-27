@@ -29,7 +29,7 @@ async def transcribe_audio(file_bytes: bytes, filename: str) -> str:
             try:
                 mime_type = mimetypes.guess_type(filename)[0] or "audio/mpeg"
                 remote_file = genai.upload_file(path=temp_path, mime_type=mime_type)
-                model = genai.GenerativeModel("gemini-1.5-flash")
+                model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-3.5-flash"))
                 result = model.generate_content([
                     remote_file,
                     "Bu Türkçe mülakat sesini yazıya dök. Konuşmacıları İK ve Aday olarak ayır, konuşmanın tamamını eksiksiz ver.",
@@ -68,7 +68,7 @@ def _transcribe_with_gemini(file_bytes: bytes, filename: str) -> str:
         try:
             mime_type = mimetypes.guess_type(filename)[0] or "audio/mpeg"
             remote_file = genai.upload_file(path=temp_path, mime_type=mime_type)
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-3.5-flash"))
             result = model.generate_content([
                 remote_file,
                 "Bu Türkçe mülakat sesini yazıya dök. Konuşmacıları İK ve Aday olarak ayır, konuşmanın tamamını eksiksiz ver.",
