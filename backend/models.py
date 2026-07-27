@@ -55,6 +55,24 @@ class InterviewResponse(InterviewCreate):
     created_at: datetime
     updated_at: datetime
 
+class InterviewAnalysisRequest(BaseModel):
+    transcript: str
+    interview_id: Optional[str] = None
+    candidate_id: Optional[str] = None
+    mode: str = "demo"
+
+class InterviewAnalysisCreate(BaseModel):
+    interview_id: Optional[str] = None
+    candidate_id: str
+    transcript: str
+    summary: str
+    general_evaluation: str
+    analysis_mode: str = "demo"
+
+class InterviewAnalysisResponse(InterviewAnalysisCreate):
+    id: str
+    created_at: datetime
+
 class ReportCreate(BaseModel):
     title: str
     position: str

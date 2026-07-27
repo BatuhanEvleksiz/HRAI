@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Search, Trash2, Eye, Edit3, X, Save, FolderOpen, CheckCircle, XCircle, Clock, Code, Globe, Briefcase, GraduationCap } from 'lucide-react';
+import { api } from '../api/api';
+import { Search, Trash2, Eye, Edit3, X, Save, FolderOpen, CheckCircle, XCircle, Clock, Code, Globe, Briefcase, GraduationCap, MessageSquareText, Loader2 } from 'lucide-react';
 
 function capitalize(str) {
   if (!str) return '';
@@ -19,6 +20,20 @@ export default function SavedCVs() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewingCV, setViewingCV] = useState(null);
   const [editingCV, setEditingCV] = useState(null);
+  const [interviewAnalyses, setInterviewAnalyses] = useState([]);
+  const [loadingAnalyses, setLoadingAnalyses] = useState(false);
+
+  useEffect(() => {
+    if (!viewingCV?.id) {
+      setInterviewAnalyses([]);
+      return;
+    }
+    setLoadingAnalyses(true);
+    api.getInterviewAnalyses(viewingCV.id)
+      .then(data => setInterviewAnalyses(Array.isArray(data) ? data : []))
+      .catch(() => setInterviewAnalyses([]))
+      .finally(() => setLoadingAnalyses(false));
+  }, [viewingCV]);
 
   const filtered = candidates.filter(c => {
     const matchesSearch = c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -221,6 +236,31 @@ export default function SavedCVs() {
                   <p className="text-sm text-gray-600">{viewingCV.ai_summary}</p>
                 </div>
               )}
+
+              <div className="border-t border-surface-100 pt-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageSquareText className="w-4 h-4 text-primary-500" />
+                  <h4 className="text-sm font-semibold text-gray-700">Mülakat Asistanı Kayıtları</h4>
+                </div>
+                {loadingAnalyses && <Loader2 className="w-5 h-5 text-primary-500 animate-spin" />}
+                {!loadingAnalyses && interviewAnalyses.length === 0 && <p className="text-xs text-gray-400">Bu aday için henüz kaydedilmiş mülakat analizi yok.</p>}
+                <div className="space-y-3">
+                  {interviewAnalyses.map(analysis => (
+                    <div key={analysis.id} className="bg-surface-50 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-primary-600">{analysis.analysis_mode === 'llm' ? 'LLM analizi' : 'Demo analizi'}</span>
+                        <span className="text-[11px] text-gray-400">{analysis.created_at ? new Date(analysis.created_at).toLocaleDateString('tr-TR') : ''}</span>
+                      </div>
+                      <p className="text-xs text-gray-600"><strong>Özet:</strong> {analysis.summary}</p>
+                      <p className="text-xs text-gray-600"><strong>Değerlendirme:</strong> {analysis.general_evaluation}</p>
+                      <details className="text-xs text-gray-500">
+                        <summary className="cursor-pointer text-primary-600">Konuşmanın tamamını aç</summary>
+                        <p className="whitespace-pre-wrap mt-2 leading-relaxed">{analysis.transcript}</p>
+                      </details>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

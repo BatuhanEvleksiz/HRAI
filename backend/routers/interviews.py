@@ -1,8 +1,11 @@
-from fastapi import APIRouter
-from models import InterviewCreate, InterviewUpdate
+from fastapi import APIRouter, File, HTTPException, UploadFile
+from models import InterviewCreate, InterviewUpdate, InterviewAnalysisRequest, InterviewAnalysisCreate
 from database import get_supabase
+from services.gemini_service import analyze_interview
+from services.interview_service import transcribe_audio
 import uuid
 from datetime import datetime
+from uuid import UUID
 
 router = APIRouter()
 
@@ -21,6 +24,68 @@ demo_interviews = [
         "updated_at": datetime.now().isoformat()
     }
 ]
+
+demo_analyses = []
+
+def _is_uuid(value: str | None) -> bool:
+    try:
+        UUID(str(value))
+        return True
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+@router.post("/assistant/analyze")
+def analyze_interview_transcript(request: InterviewAnalysisRequest):
+    transcript = request.transcript.strip()
+    if not transcript:
+        raise HTTPException(status_code=400, detail="Analiz için konuşma metni gerekli.")
+    if request.mode not in {"demo", "llm"}:
+        raise HTTPException(status_code=400, detail="Analiz modu demo veya llm olmalı.")
+    return {**analyze_interview(transcript, request.mode), "analysis_mode": request.mode}
+
+@router.post("/assistant/transcribe")
+async def transcribe_interview_audio(file: UploadFile = File(...)):
+    try:
+        transcript = await transcribe_audio(await file.read(), file.filename or "interview-audio")
+        return {"transcript": transcript}
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Ses transkripsiyonu başarısız: {exc}")
+
+@router.post("/assistant/save")
+def save_interview_analysis(analysis: InterviewAnalysisCreate):
+    payload = analysis.dict()
+    supabase = get_supabase()
+    # Demo cards use non-UUID ids and should remain usable without creating
+    # invalid foreign-key rows in the real Supabase tables.
+    if supabase and _is_uuid(analysis.candidate_id) and (not analysis.interview_id or _is_uuid(analysis.interview_id)):
+        try:
+            result = supabase.table("interview_transcripts").insert(payload).execute()
+            if result.data:
+                return result.data[0]
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc))
+    record = {**payload, "id": str(uuid.uuid4()), "created_at": datetime.now().isoformat()}
+    demo_analyses.append(record)
+    return record
+
+@router.get("/assistant")
+def list_interview_analyses(candidate_id: str = None, interview_id: str = None):
+    supabase = get_supabase()
+    if supabase:
+        try:
+            query = supabase.table("interview_transcripts").select("*").order("created_at", desc=True)
+            if candidate_id:
+                query = query.eq("candidate_id", candidate_id)
+            if interview_id:
+                query = query.eq("interview_id", interview_id)
+            return query.execute().data
+        except Exception:
+            pass
+    return [item for item in demo_analyses if
+            (not candidate_id or item.get("candidate_id") == candidate_id) and
+            (not interview_id or item.get("interview_id") == interview_id)]
 
 @router.post("/")
 def create_interview(interview: InterviewCreate):

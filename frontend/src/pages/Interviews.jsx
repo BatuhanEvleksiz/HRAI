@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { api } from '../api/api';
 import { useStore } from '../store/useStore';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay,
@@ -6,7 +7,8 @@ import {
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  Plus, X, Check, Calendar, Clock, GripVertical, ChevronDown, User, Briefcase, StickyNote,
+  Plus, X, Check, Calendar, Clock, GripVertical, User, Briefcase, StickyNote, Mic, Square,
+  Upload, FileAudio, Sparkles, Save, Loader2, MessageSquareText,
 } from 'lucide-react';
 
 function capitalize(str) {
@@ -161,9 +163,183 @@ function KanbanColumn({ status, interviews, onToggleComplete, onDelete, onAddNot
   );
 }
 
+const DEMO_TRANSCRIPT = `İK: Bize son projenizden ve bu projedeki sorumluluğunuzdan bahseder misiniz?
+Aday: Son projemde Python ve FastAPI kullanarak bir e-ticaret servisi geliştirdim. Takım içinde API tasarımından ve test süreçlerinden sorumluydum.
+İK: Zorlandığınız bir problemi nasıl çözdünüz?
+Aday: Trafik arttığında performans sorunu yaşadık. Logları inceleyip önbellekleme ve veritabanı indeksleri ekledim. Sonuçta yanıt süresini düşürdük.`;
+
+function InterviewAssistant({ interviews, candidates }) {
+  const [selectedInterviewId, setSelectedInterviewId] = useState('');
+  const [transcript, setTranscript] = useState('');
+  const [summary, setSummary] = useState('');
+  const [evaluation, setEvaluation] = useState('');
+  const [analysisMode, setAnalysisMode] = useState('demo');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [message, setMessage] = useState('');
+  const recognitionRef = useRef(null);
+
+  const selectedInterview = interviews.find(item => item.id === selectedInterviewId);
+  const selectedCandidate = candidates.find(item => item.id === selectedInterview?.candidate_id);
+
+  const startLiveInterview = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setMessage('Bu tarayıcı canlı konuşma tanımayı desteklemiyor. Chrome kullanabilir veya ses dosyası yükleyebilirsiniz.');
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'tr-TR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event) => {
+      let text = '';
+      for (let i = 0; i < event.results.length; i += 1) text += event.results[i][0].transcript + ' ';
+      setTranscript(text.trim());
+    };
+    recognition.onerror = () => setMessage('Mikrofon konuşmayı algılayamadı. İzinleri kontrol edip tekrar deneyin.');
+    recognition.onend = () => setIsRecording(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setMessage('Canlı konuşma dinleniyor. Görüşme bitince kaydı durdurun.');
+    setIsRecording(true);
+  };
+
+  const stopLiveInterview = () => {
+    recognitionRef.current?.stop();
+    setIsRecording(false);
+    setMessage('Konuşma metne aktarıldı. Şimdi analiz modunu seçebilirsiniz.');
+  };
+
+  const handleAudioUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setIsProcessing(true);
+    setMessage('Ses dosyası transkripsiyon servisine gönderiliyor. Ses kalıcı olarak saklanmaz.');
+    try {
+      const result = await api.transcribeInterviewAudio(file);
+      setTranscript(result.transcript || '');
+      setMessage('Ses metne dönüştürüldü.');
+    } catch (error) {
+      setMessage(error.message || 'Ses dosyası işlenemedi.');
+    } finally {
+      setIsProcessing(false);
+      event.target.value = '';
+    }
+  };
+
+  const analyze = async (mode) => {
+    const source = transcript.trim() || DEMO_TRANSCRIPT;
+    setTranscript(source);
+    setAnalysisMode(mode);
+    setIsProcessing(true);
+    setMessage(mode === 'llm' ? 'LLM özeti ve değerlendirmesi hazırlanıyor...' : 'Demo analiz hazırlanıyor...');
+    try {
+      const result = await api.analyzeInterview({
+        transcript: source,
+        interview_id: selectedInterviewId || null,
+        candidate_id: selectedInterview?.candidate_id || null,
+        mode,
+      });
+      setSummary(result.summary || '');
+      setEvaluation(result.general_evaluation || '');
+      setMessage(`${mode === 'llm' ? 'LLM' : 'Demo'} analizi hazır.`);
+    } catch (error) {
+      setMessage(error.message || 'Analiz yapılamadı.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const saveAnalysis = async () => {
+    if (!selectedInterview?.candidate_id) {
+      setMessage('Kaydetmek için önce randevulu bir mülakat seçin.');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      await api.saveInterviewAnalysis({
+        interview_id: selectedInterview.id,
+        candidate_id: selectedInterview.candidate_id,
+        transcript,
+        summary,
+        general_evaluation: evaluation,
+        analysis_mode: analysisMode,
+      });
+      setMessage('Mülakat kaydı adaya bağlandı ve kaydedildi.');
+    } catch (error) {
+      setMessage(error.message || 'Mülakat kaydedilemedi.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5 animate-slide-up">
+      <div className="antigravity-card-static p-5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <MessageSquareText className="w-5 h-5 text-primary-500" />
+              <h2 className="text-xl font-bold text-gray-900">Mülakat Asistanı</h2>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">Konuşmayı metne dönüştürün, yalnızca istediğiniz analiz için LLM kullanın.</p>
+          </div>
+          <div className="min-w-[240px]">
+            <label className="text-xs font-semibold text-gray-600 mb-1 block">Randevulu mülakat</label>
+            <select value={selectedInterviewId} onChange={e => setSelectedInterviewId(e.target.value)} className="antigravity-select">
+              <option value="">Mülakat seçin...</option>
+              {interviews.map(item => <option key={item.id} value={item.id}>{capitalize(item.candidate_name)} - {item.interview_date}</option>)}
+            </select>
+          </div>
+        </div>
+        {selectedCandidate && <p className="text-xs text-primary-600 mt-3">Kayıt adaya bağlanacak: {capitalize(selectedCandidate.full_name)}</p>}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button type="button" onClick={isRecording ? stopLiveInterview : startLiveInterview} className={`antigravity-card-static p-5 text-left transition-colors ${isRecording ? 'border-danger-400 bg-danger-50/40' : 'hover:border-primary-300'}`}>
+          {isRecording ? <Square className="w-6 h-6 text-danger-500 mb-3" /> : <Mic className="w-6 h-6 text-primary-500 mb-3" />}
+          <span className="font-bold text-gray-900 block">{isRecording ? 'Canlı mülakatı durdur' : 'Canlı mülakat başlat'}</span>
+          <span className="text-xs text-gray-500">Tarayıcı mikrofonundan Türkçe konuşmayı metne aktarır.</span>
+        </button>
+        <label className="antigravity-card-static p-5 cursor-pointer hover:border-primary-300 transition-colors">
+          <Upload className="w-6 h-6 text-primary-500 mb-3" />
+          <span className="font-bold text-gray-900 block">Kayıtlı ses dosyası yükle</span>
+          <span className="text-xs text-gray-500">WhisperX servisi bağlıysa ses dosyasını metne çevirir.</span>
+          <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" disabled={isProcessing} />
+        </label>
+      </div>
+
+      <div className="antigravity-card-static p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2"><FileAudio className="w-5 h-5 text-primary-500" /><h3 className="font-bold text-gray-900">Konuşmanın tamamı</h3></div>
+          <span className="text-xs text-gray-400">Ses dosyası saklanmaz</span>
+        </div>
+        <textarea value={transcript} onChange={e => setTranscript(e.target.value)} className="antigravity-input min-h-[180px] resize-y" placeholder="Canlı kayıt veya ses dosyası sonrası konuşma burada görünür..." />
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={() => analyze('demo')} disabled={isProcessing} className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> Demo analizi</button>
+          <button type="button" onClick={() => analyze('llm')} disabled={isProcessing} className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> LLM ile analiz et</button>
+          {isProcessing && <Loader2 className="w-5 h-5 text-primary-500 animate-spin self-center" />}
+        </div>
+      </div>
+
+      {(summary || evaluation) && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="antigravity-card-static p-5"><h3 className="font-bold text-gray-900 mb-2">Mülakat Özeti</h3><p className="text-sm text-gray-600 leading-relaxed">{summary}</p></div>
+        <div className="antigravity-card-static p-5"><h3 className="font-bold text-gray-900 mb-2">Genel Değerlendirme</h3><p className="text-sm text-gray-600 leading-relaxed">{evaluation}</p></div>
+      </div>}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-gray-500">{message}</p>
+        <button type="button" onClick={saveAnalysis} disabled={isProcessing || !summary || !evaluation} className="antigravity-button flex items-center gap-2 disabled:opacity-50"><Save className="w-4 h-4" /> Mülakat kaydını kaydet</button>
+      </div>
+    </div>
+  );
+}
+
 export default function Interviews() {
   const { interviews, candidates, addInterview, updateInterview, moveInterview, deleteInterview } = useStore();
   const [showNewForm, setShowNewForm] = useState(false);
+  const [activeTab, setActiveTab] = useState('schedule');
   const [newInterview, setNewInterview] = useState({
     candidate_id: '', candidate_name: '', position: '', interview_date: '', interview_time: '', notes: ''
   });
@@ -249,8 +425,15 @@ export default function Interviews() {
         </button>
       </div>
 
+      <div className="flex gap-2 border-b border-surface-200">
+        <button onClick={() => setActiveTab('schedule')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 ${activeTab === 'schedule' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'}`}>Mülakat Planı</button>
+        <button onClick={() => setActiveTab('assistant')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 ${activeTab === 'assistant' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500'}`}>Mülakat Asistanı</button>
+      </div>
+
+      {activeTab === 'assistant' && <InterviewAssistant interviews={interviews} candidates={candidates} />}
+
       {/* New Interview Form */}
-      {showNewForm && (
+      {activeTab === 'schedule' && showNewForm && (
         <div className="antigravity-card-static p-6 animate-slide-up space-y-4">
           <h3 className="font-bold text-gray-800">Yeni Mülakat Oluştur</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -314,7 +497,7 @@ export default function Interviews() {
       )}
 
       {/* Kanban Board */}
-      <DndContext
+      {activeTab === 'schedule' && <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
@@ -332,7 +515,7 @@ export default function Interviews() {
             />
           ))}
         </div>
-      </DndContext>
+      </DndContext>}
     </div>
   );
 }

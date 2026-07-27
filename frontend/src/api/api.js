@@ -49,6 +49,20 @@ export const api = {
   updateInterview: (id, data) => request(`/interviews/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   updateInterviewStatus: (id, status) => request(`/interviews/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
   deleteInterview: (id) => request(`/interviews/${id}`, { method: 'DELETE' }),
+  analyzeInterview: (data) => request('/interviews/assistant/analyze', { method: 'POST', body: JSON.stringify(data) }),
+  transcribeInterviewAudio: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_BASE}/interviews/assistant/transcribe`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'Ses transkripsiyonu başarısız.');
+    return data;
+  },
+  saveInterviewAnalysis: (data) => request('/interviews/assistant/save', { method: 'POST', body: JSON.stringify(data) }),
+  getInterviewAnalyses: (candidateId, interviewId) => request(`/interviews/assistant?${new URLSearchParams({ ...(candidateId ? { candidate_id: candidateId } : {}), ...(interviewId ? { interview_id: interviewId } : {}) })}`),
 
   // Reports
   getReports: () => request('/reports/'),

@@ -177,7 +177,24 @@ CREATE INDEX idx_interviews_status ON interviews(status);
 CREATE INDEX idx_interviews_date ON interviews(interview_date);
 
 -- ============================================================
--- 5. RAPORLAR (Reports)
+-- 5. MÜLAKAT ASİSTANI KAYITLARI (Transcripts and analyses)
+-- ============================================================
+CREATE TABLE interview_transcripts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    interview_id UUID REFERENCES interviews(id) ON DELETE SET NULL,
+    candidate_id UUID NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+    transcript TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    general_evaluation TEXT NOT NULL,
+    analysis_mode VARCHAR(10) NOT NULL DEFAULT 'demo' CHECK (analysis_mode IN ('demo', 'llm')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_interview_transcripts_candidate ON interview_transcripts(candidate_id);
+CREATE INDEX idx_interview_transcripts_interview ON interview_transcripts(interview_id);
+
+-- ============================================================
+-- 6. RAPORLAR (Reports)
 -- ============================================================
 CREATE TABLE reports (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -203,7 +220,7 @@ CREATE TABLE reports (
 );
 
 -- ============================================================
--- 6. CHATBOT GEÇMİŞİ (Chat History)
+-- 7. CHATBOT GEÇMİŞİ (Chat History)
 -- ============================================================
 CREATE TABLE chat_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -221,7 +238,7 @@ CREATE TABLE chat_history (
 );
 
 -- ============================================================
--- 7. UPDATED_AT TRİGGER'I
+-- 8. UPDATED_AT TRİGGER'I
 -- ============================================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
