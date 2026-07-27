@@ -1,6 +1,9 @@
 import os
 import google.generativeai as genai
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
 if api_key and "your_" not in api_key:

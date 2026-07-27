@@ -13,6 +13,9 @@ export default function AnalyzeUpload() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleDemoAnalyze = () => {
     setIsAnalyzing(true);
@@ -44,7 +47,7 @@ export default function AnalyzeUpload() {
     }, 2000);
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUploadLegacy = (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
       setIsAnalyzing(true);
@@ -58,6 +61,45 @@ export default function AnalyzeUpload() {
         .catch(() => setError('PDF analiz edilemedi. Backend ve API anahtarlarını kontrol edin.'))
         .finally(() => setIsAnalyzing(false));
     }
+  };
+
+  const selectPDF = (file) => {
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setError('Lütfen yalnızca PDF dosyası yükleyin.');
+      return;
+    }
+    setSelectedFile(file);
+    setUploadProgress(0);
+    setError('');
+    setSaved(false);
+  };
+
+  const handleFileUpload = (e) => {
+    selectPDF(e.target.files?.[0]);
+    e.target.value = '';
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragActive(false);
+    selectPDF(e.dataTransfer.files?.[0]);
+  };
+
+  const handleRealAnalyze = () => {
+    if (!selectedFile) return;
+    setIsAnalyzing(true);
+    setSaved(false);
+    setError('');
+    setUploadProgress(0);
+    api.uploadCV(selectedFile, setUploadProgress)
+      .then(data => {
+        if (!data || data.error) throw new Error(data?.error || 'PDF analiz sonucu boş döndü.');
+        setAnalyzedCV(data);
+        setSelectedFile(null);
+      })
+      .catch((uploadError) => setError(uploadError.message || 'PDF analiz edilemedi.'))
+      .finally(() => setIsAnalyzing(false));
   };
 
   const handleSave = async () => {
@@ -95,7 +137,13 @@ export default function AnalyzeUpload() {
 
       {/* Upload Area */}
       {!analyzedCV && (
-        <div className="antigravity-card p-12 text-center">
+        <div
+          className={`antigravity-card p-12 text-center transition-colors ${isDragActive ? 'border-primary-400 bg-primary-50/50' : ''}`}
+          onDragEnter={(e) => { e.preventDefault(); setIsDragActive(true); }}
+          onDragOver={(e) => e.preventDefault()}
+          onDragLeave={() => setIsDragActive(false)}
+          onDrop={handleDrop}
+        >
           <div className="flex flex-col items-center gap-4">
             <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center ring-4 ring-primary-100">
               <Upload className="w-8 h-8 text-primary-500" />
@@ -111,11 +159,19 @@ export default function AnalyzeUpload() {
             </div>
 
             <div className="flex gap-3 mt-4">
-              <label className="antigravity-button cursor-pointer flex items-center gap-2">
+              <label className="px-6 py-2.5 rounded-xl font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 cursor-pointer flex items-center gap-2">
                 <Upload className="w-4 h-4" />
-                PDF Yükle
-                <input type="file" accept=".pdf" className="hidden" onChange={handleFileUpload} />
+                PDF seç / sürükle bırak
+                <input type="file" accept=".pdf,application/pdf" className="hidden" onChange={handleFileUpload} />
               </label>
+              <button
+                onClick={handleRealAnalyze}
+                disabled={!selectedFile || isAnalyzing}
+                className="antigravity-button flex items-center gap-2 disabled:opacity-50"
+              >
+                <Sparkles className="w-4 h-4" />
+                {isAnalyzing ? 'API analiz ediyor...' : 'PDF\'yi API ile analiz et'}
+              </button>
               <button
                 onClick={handleDemoAnalyze}
                 disabled={isAnalyzing}
@@ -125,6 +181,12 @@ export default function AnalyzeUpload() {
                 {isAnalyzing ? 'Analiz Ediliyor...' : 'Demo CV Analiz Et'}
               </button>
             </div>
+
+            {selectedFile && <p className="text-sm text-primary-600 mt-3 truncate" title={selectedFile.name}>Seçilen dosya: {selectedFile.name}</p>}
+            {isAnalyzing && <div className="max-w-md mx-auto mt-4 space-y-1.5">
+              <div className="flex justify-between text-xs text-gray-500"><span>{uploadProgress < 100 ? 'PDF yükleniyor...' : 'Gemini PDF içeriğini analiz ediyor...'}</span><span>%{uploadProgress}</span></div>
+              <div className="h-2 rounded-full bg-surface-100 overflow-hidden"><div className="h-full rounded-full bg-primary-500 transition-all duration-200" style={{ width: `${Math.max(uploadProgress, 4)}%` }} /></div>
+            </div>}
 
             <p className="text-xs text-gray-300 mt-2">
               Demo modunda örnek bir CV otomatik yüklenir. API anahtarı eklenince gerçek OCR çalışır.

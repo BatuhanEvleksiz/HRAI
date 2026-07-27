@@ -24,15 +24,25 @@ export const api = {
   getDashboardStats: () => request('/dashboard/stats'),
 
   // Candidates
-  uploadCV: async (file) => {
+  uploadCV: (file, onProgress) => new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await fetch(`${API_BASE}/candidates/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-    return response.json();
-  },
+    const request = new XMLHttpRequest();
+    request.open('POST', `${API_BASE}/candidates/upload`);
+    request.timeout = 180000;
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) onProgress(Math.round((event.loaded / event.total) * 100));
+    };
+    request.onload = () => {
+      let data = {};
+      try { data = JSON.parse(request.responseText || '{}'); } catch { /* keep generic error */ }
+      if (request.status >= 200 && request.status < 300) resolve(data);
+      else reject(new Error(data.detail || data.error || 'PDF analiz edilemedi.'));
+    };
+    request.onerror = () => reject(new Error('PDF dosyası gönderilemedi.'));
+    request.ontimeout = () => reject(new Error('PDF analizi zaman aşımına uğradı.'));
+    request.send(formData);
+  }),
   demoAnalyze: () => request('/candidates/demo-analyze', { method: 'POST' }),
   saveCandidate: (data) => request('/candidates/save', { method: 'POST', body: JSON.stringify(data) }),
   getCandidates: (status) => request(`/candidates/${status ? `?status=${status}` : ''}`),
