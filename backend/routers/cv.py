@@ -15,16 +15,21 @@ def fallback_cv_analysis(text: str, filename: str | None) -> dict:
     email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", text)
     phone_match = re.search(r"(?:\+90|0)?\s*5\d{2}\s*\d{3}\s*\d{2}\s*\d{2}", text)
     known_skills = [
-        skill for skill in ["python", "java", "javascript", "typescript", "react", "sql", "fastapi", "docker", "aws", "git"]
-        if skill in text.lower()
+        skill for skill in [
+            "python", "java", "javascript", "typescript", "react", "sql", "fastapi", "docker", "aws", "git",
+            "embedded c", "c++", "assembly", "stm32", "esp32", "freertos", "spi", "i2c", "uart", "can bus",
+            "modbus", "kicad", "mqtt", "esp-idf", "usb hid", "stm32cubeide",
+        ] if skill in text.lower()
     ]
+    profession_match = re.search(r"^([^|\n]+(?:Mühendisi|Developer|Engineer))", text, re.IGNORECASE | re.MULTILINE)
+    university_match = re.search(r"(?:Lisans|Üniversite).*?[—-]\s*([^|\n]+)", text, re.IGNORECASE)
     first_line = next((line.strip() for line in text.splitlines() if line.strip()), "PDF adayı")
     return {
         "full_name": first_line[:255],
         "email": email_match.group(0) if email_match else "",
         "phone": phone_match.group(0) if phone_match else "",
-        "profession": "",
-        "university": "",
+        "profession": profession_match.group(1).strip() if profession_match else "",
+        "university": university_match.group(1).strip() if university_match else "",
         "experience_years": 0,
         "skills": known_skills,
         "languages": [],
@@ -77,7 +82,7 @@ async def upload_cv(file: UploadFile = File(...)):
         data = fallback_cv_analysis(text, filename)
     except Exception:
         data = fallback_cv_analysis(text, filename)
-    if data.get("error"):
+    if data.get("error") or data.get("full_name") == "Demo Name":
         data = fallback_cv_analysis(text, filename)
     data["raw_cv_text"] = text
     data["original_filename"] = filename
