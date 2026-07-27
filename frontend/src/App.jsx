@@ -16,6 +16,7 @@ export default function App() {
   const setCandidates = useStore(state => state.setCandidates);
 
   useEffect(() => {
+    document.documentElement.classList.toggle('theme-pink', localStorage.getItem('ikai-theme') === 'pink');
     api.getCandidates()
       .then(data => Array.isArray(data) && setCandidates(data))
       .catch(() => {});

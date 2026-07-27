@@ -3,7 +3,13 @@ import { useStore } from '../store/useStore';
 import { Users, CheckCircle2, XCircle, Clock, CalendarDays, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const barColors = ['#1B4EF5', '#3874FF', '#5996FF', '#8FB5FF', '#70A5FF'];
+const barColors = [
+  'rgb(var(--primary-500))',
+  'rgb(var(--accent-600))',
+  'rgb(var(--accent-500))',
+  'rgb(var(--primary-300))',
+  'rgb(var(--accent-400))',
+];
 
 function capitalize(str) {
   if (!str) return '';
