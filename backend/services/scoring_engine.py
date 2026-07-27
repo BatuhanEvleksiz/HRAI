@@ -6,7 +6,9 @@ def calculate_scores(candidates: list, requirements: dict, weights: dict) -> lis
     levels = {"a1": 1, "a2": 2, "b1": 3, "b2": 4, "c1": 5, "c2": 6}
     req_langs = {l["language"].lower(): levels.get(str(l.get("level", "")).lower(), 0) for l in requirements.get("required_languages", [])}
     
-    req_uni = str(requirements.get("required_university", "")).lower()
+    req_universities = [str(u).lower() for u in requirements.get("required_universities", []) if u]
+    if not req_universities and requirements.get("required_university"):
+        req_universities = [str(requirements["required_university"]).lower()]
     req_projs = [p.lower() for p in requirements.get("required_projects", [])]
     req_summary = [k.lower() for k in requirements.get("llm_summary_keywords", [])]
     
@@ -36,8 +38,8 @@ def calculate_scores(candidates: list, requirements: dict, weights: dict) -> lis
             breakdown["languages"] = weights.get("language_weight", 10)
             
         c_uni = str(c.get("university", "")).lower()
-        if req_uni:
-            if req_uni in c_uni or c_uni in req_uni:
+        if req_universities:
+            if any(u in c_uni or c_uni in u for u in req_universities):
                 breakdown["university"] = weights.get("university_weight", 10)
         else:
             breakdown["university"] = weights.get("university_weight", 10)

@@ -179,7 +179,15 @@ export const useStore = create((set, get) => ({
   // Candidates
   candidates: DEMO_CANDIDATES,
   setCandidates: (candidates) => set({ candidates }),
-  addCandidate: (candidate) => set((state) => ({ candidates: [...state.candidates, { ...candidate, id: String(state.candidates.length + 1), status: 'pending', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }] })),
+  addCandidate: (candidate) => set((state) => ({
+    candidates: [...state.candidates, {
+      ...candidate,
+      id: candidate.id || String(state.candidates.length + 1),
+      status: candidate.status || 'pending',
+      created_at: candidate.created_at || new Date().toISOString(),
+      updated_at: candidate.updated_at || new Date().toISOString(),
+    }]
+  })),
   updateCandidate: (id, data) => set((state) => ({
     candidates: state.candidates.map(c => c.id === id ? { ...c, ...data, updated_at: new Date().toISOString() } : c)
   })),

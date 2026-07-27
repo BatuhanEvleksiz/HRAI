@@ -78,6 +78,7 @@ class MatchRequest(BaseModel):
     required_skills: List[str] = []
     required_languages: List[Dict[str, str]] = []
     required_university: Optional[str] = None
+    required_universities: List[str] = []
     required_projects: List[str] = []
     llm_summary_keywords: List[str] = []
 

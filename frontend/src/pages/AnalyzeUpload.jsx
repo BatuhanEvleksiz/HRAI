@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
+import { api } from '../api/api';
 import { Upload, FileText, Sparkles, Save, X, CheckCircle, Briefcase, GraduationCap, Globe, Code, FolderGit2 } from 'lucide-react';
 
 function capitalize(str) {
@@ -11,6 +12,7 @@ export default function AnalyzeUpload() {
   const { analyzedCV, setAnalyzedCV, addCandidate } = useStore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
   const handleDemoAnalyze = () => {
     setIsAnalyzing(true);
@@ -45,15 +47,30 @@ export default function AnalyzeUpload() {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
-      // In a real app, this would call the API
-      handleDemoAnalyze();
+      setIsAnalyzing(true);
+      setSaved(false);
+      setError('');
+      api.uploadCV(file)
+        .then(data => {
+          if (data?.error) throw new Error(data.error);
+          setAnalyzedCV(data);
+        })
+        .catch(() => setError('PDF analiz edilemedi. Backend ve API anahtarlarını kontrol edin.'))
+        .finally(() => setIsAnalyzing(false));
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (analyzedCV) {
-      addCandidate(analyzedCV);
-      setSaved(true);
+      try {
+        setError('');
+        const savedCandidate = await api.saveCandidate(analyzedCV);
+        addCandidate(savedCandidate);
+        setAnalyzedCV(savedCandidate);
+        setSaved(true);
+      } catch {
+        setError('CV veritabanına kaydedilemedi. Supabase bağlantısını kontrol edin.');
+      }
     }
   };
 
@@ -69,6 +86,12 @@ export default function AnalyzeUpload() {
         <h1 className="text-3xl font-bold text-gray-900">Analiz & Kayıt</h1>
         <p className="text-gray-500 mt-1">PDF CV yükleyin, AI otomatik analiz etsin</p>
       </div>
+
+      {error && (
+        <div className="p-3 rounded-xl bg-danger-50 border border-danger-200 text-danger-600 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Upload Area */}
       {!analyzedCV && (

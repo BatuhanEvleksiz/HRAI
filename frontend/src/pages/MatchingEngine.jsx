@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useStore } from '../store/useStore';
+import { api } from '../api/api';
 import { Target, Search, Sparkles, X, ChevronDown, ChevronUp, Save, GraduationCap, Code, Globe, FolderGit2, Brain, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 function capitalize(str) {
@@ -66,7 +67,7 @@ export default function MatchingEngine() {
   const [position, setPosition] = useState('');
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
-  const [selectedUniversity, setSelectedUniversity] = useState('');
+  const [selectedUniversities, setSelectedUniversities] = useState([]);
   const [projectKeywords, setProjectKeywords] = useState([]);
   const [llmKeywords, setLlmKeywords] = useState([]);
 
@@ -77,6 +78,8 @@ export default function MatchingEngine() {
   // Results
   const [results, setResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [matchingMode, setMatchingMode] = useState(null);
+  const [matchingError, setMatchingError] = useState('');
   const [expandedCard, setExpandedCard] = useState(null);
 
   const addLanguage = () => {
@@ -97,8 +100,10 @@ export default function MatchingEngine() {
     }
   };
 
-  const runMatching = useCallback(() => {
+  const runDemoMatching = useCallback(() => {
     setIsSearching(true);
+    setMatchingMode('demo');
+    setMatchingError('');
 
     setTimeout(() => {
       const scored = candidates.map(candidate => {
@@ -138,8 +143,12 @@ export default function MatchingEngine() {
         }
 
         // University Score
-        if (selectedUniversity && weights.university_weight > 0) {
-          const uniMatch = candidate.university?.toLowerCase() === selectedUniversity.toLowerCase();
+        if (selectedUniversities.length > 0 && weights.university_weight > 0) {
+          const uniMatch = selectedUniversities.some(university => {
+            const selected = university.toLowerCase();
+            const candidateUniversity = candidate.university?.toLowerCase() || '';
+            return candidateUniversity === selected || candidateUniversity.includes(selected) || selected.includes(candidateUniversity);
+          });
           breakdown.university = { score: uniMatch ? weights.university_weight : 0, max: weights.university_weight, matched: uniMatch };
           totalScore += uniMatch ? weights.university_weight : 0;
         } else {
@@ -207,7 +216,46 @@ export default function MatchingEngine() {
       setResults(scored);
       setIsSearching(false);
     }, 1500);
-  }, [candidates, selectedSkills, selectedLanguages, selectedUniversity, projectKeywords, llmKeywords, weights]);
+  }, [candidates, selectedSkills, selectedLanguages, selectedUniversities, projectKeywords, llmKeywords, weights]);
+
+  const normalizeApiResults = (data) => data.map(item => {
+    const candidate = item.candidate || item;
+    const raw = item.score_breakdown || {};
+    return {
+      ...candidate,
+      totalScore: Math.round(item.total_score ?? item.totalScore ?? 0),
+      breakdown: {
+        skill: raw.skill || raw.skills || { score: 0, max: weights.skill_weight },
+        project: raw.project || raw.projects || { score: 0, max: weights.project_weight },
+        llm_summary: raw.llm_summary || raw.ai_summary || { score: 0, max: weights.llm_summary_weight },
+        university: raw.university || { score: 0, max: weights.university_weight },
+        language: raw.language || raw.languages || { score: 0, max: weights.language_weight },
+      },
+      skillMatches: item.skill_matches || item.skillMatches || [],
+      aiComment: item.ai_comment || item.aiComment || 'API eşleştirmesi tamamlandı.',
+    };
+  });
+
+  const runApiMatching = async () => {
+    setIsSearching(true);
+    setMatchingMode('api');
+    setMatchingError('');
+    try {
+      const data = await api.matchCandidates({
+        position,
+        required_skills: selectedSkills,
+        required_languages: selectedLanguages,
+        required_universities: selectedUniversities,
+        required_projects: projectKeywords,
+        llm_summary_keywords: llmKeywords,
+      });
+      setResults(normalizeApiResults(data));
+    } catch {
+      setMatchingError('API eşleştirmesi başarısız oldu. Backend bağlantısını kontrol edin.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const getScoreColor = (score) => {
     if (score >= 70) return { text: 'text-success-500', bg: 'bg-success-50', border: 'border-success-200', gradient: 'from-success-500 to-success-400' };
@@ -220,7 +268,7 @@ export default function MatchingEngine() {
     addReport({
       title: `${capitalize(position) || 'Genel'} Aday Raporu - ${new Date().toLocaleDateString('tr-TR')}`,
       position: position,
-      filter_criteria: { skills: selectedSkills, languages: selectedLanguages, university: selectedUniversity, projects: projectKeywords, llm_keywords: llmKeywords },
+      filter_criteria: { skills: selectedSkills, languages: selectedLanguages, universities: selectedUniversities, projects: projectKeywords, llm_keywords: llmKeywords },
       matched_candidates: results.map(r => ({ candidate_name: capitalize(r.full_name), score: r.totalScore, ai_comment: r.aiComment })),
       ai_summary: `${results.length} aday ${capitalize(position) || 'pozisyon'} için değerlendirildi. En yüksek eşleşme: ${capitalize(results[0]?.full_name)} (%${results[0]?.totalScore}).`,
     });
@@ -310,14 +358,28 @@ export default function MatchingEngine() {
             Üniversite
             <span className="text-xs text-gray-400 font-normal">(Ağırlık: %{weights.university_weight})</span>
           </label>
-          <select
-            value={selectedUniversity}
-            onChange={(e) => setSelectedUniversity(e.target.value)}
-            className="antigravity-select"
-          >
-            <option value="">Üniversite seçin (opsiyonel)</option>
-            {AVAILABLE_UNIVERSITIES.map(u => <option key={u} value={u}>{capitalize(u)}</option>)}
-          </select>
+          <div className="flex flex-wrap gap-2 p-3 bg-surface-50 rounded-xl border border-surface-200">
+            {AVAILABLE_UNIVERSITIES.map(university => {
+              const selected = selectedUniversities.includes(university);
+              return (
+                <button
+                  key={university}
+                  type="button"
+                  onClick={() => setSelectedUniversities(selected
+                    ? selectedUniversities.filter(item => item !== university)
+                    : [...selectedUniversities, university])}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selected
+                    ? 'bg-primary-500 text-white shadow-sm'
+                    : 'bg-white text-gray-600 border border-surface-200 hover:border-primary-300 hover:text-primary-600'}`}
+                >
+                  {capitalize(university)}
+                </button>
+              );
+            })}
+          </div>
+          {selectedUniversities.length > 0 && (
+            <p className="text-xs text-primary-600 mt-2">{selectedUniversities.length} üniversite seçildi; herhangi biri eşleşirse tam puan verilir.</p>
+          )}
         </div>
 
         {/* Projects */}
@@ -343,21 +405,35 @@ export default function MatchingEngine() {
         {/* Actions */}
         <div className="flex gap-3 pt-2">
           <button
-            onClick={() => { setSelectedSkills([]); setSelectedLanguages([]); setSelectedUniversity(''); setProjectKeywords([]); setLlmKeywords([]); setPosition(''); setResults(null); }}
+            onClick={() => { setSelectedSkills([]); setSelectedLanguages([]); setSelectedUniversities([]); setProjectKeywords([]); setLlmKeywords([]); setPosition(''); setResults(null); setMatchingError(''); }}
             className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-surface-100 hover:bg-surface-200 transition-colors"
           >
             Sıfırla
           </button>
           <button
-            onClick={runMatching}
+            onClick={runApiMatching}
             disabled={isSearching}
             className="antigravity-button flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Target className="w-4 h-4" />
-            {isSearching ? 'Eşleştirme Yapılıyor...' : 'Eşleştirmeyi Başlat'}
+            {isSearching && matchingMode === 'api' ? 'API Eşleştiriyor...' : 'API ile Eşleştirmeyi Başlat'}
+          </button>
+          <button
+            onClick={runDemoMatching}
+            disabled={isSearching}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <Sparkles className="w-4 h-4" />
+            {isSearching && matchingMode === 'demo' ? 'Demo Hesaplıyor...' : 'Demo Eşleştirmeyi Başlat'}
           </button>
         </div>
       </div>
+
+      {matchingError && (
+        <div className="p-3 rounded-xl bg-danger-50 border border-danger-200 text-danger-600 text-sm">
+          {matchingError}
+        </div>
+      )}
 
       {/* Loading */}
       {isSearching && (
