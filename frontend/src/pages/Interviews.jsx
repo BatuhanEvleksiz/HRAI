@@ -251,13 +251,14 @@ function InterviewAssistant({ interviews, candidates }) {
       setMessage('Önce canlı kayıt başlatın veya bir ses dosyası yükleyin.');
       return;
     }
-    const source = transcript.trim() || DEMO_TRANSCRIPT;
+    const currentTranscript = transcript.trim();
+    const source = mode === 'demo' ? (currentTranscript || DEMO_TRANSCRIPT) : currentTranscript;
     setTranscript(source);
     setAnalysisMode(mode);
     setIsProcessing(true);
     setMessage(mode === 'llm' ? 'LLM özeti ve değerlendirmesi hazırlanıyor...' : 'Demo analiz hazırlanıyor...');
     try {
-      const result = mode === 'llm' && !transcript.trim() && audioFile
+      const result = mode === 'llm' && !currentTranscript && audioFile
         ? await api.analyzeInterviewAudio(audioFile, {
           interview_id: selectedInterviewId,
           candidate_id: selectedInterview?.candidate_id,
@@ -351,6 +352,7 @@ function InterviewAssistant({ interviews, candidates }) {
             <div className="h-2 rounded-full bg-surface-100 overflow-hidden"><div className="h-full rounded-full bg-primary-500 transition-all duration-200" style={{ width: `${uploadProgress}%` }} /></div>
           </div>}
           {!isUploading && uploadedFileName && uploadProgress === 100 && <p className="text-xs text-success-600 mt-2">Yükleme tamamlandı</p>}
+          {!isUploading && uploadedFileName && !transcript.trim() && <p className="text-xs text-warning-600 mt-2">Ses dökümü henüz oluşmadı. LLM ile analiz et düğmesi ses dosyasını doğrudan işleyecek.</p>}
         </div>
       </div>
 
