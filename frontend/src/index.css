@@ -276,6 +276,41 @@ body {
   color: #e8edf4;
 }
 
+/* Dark mode uses a neutral graphite scale so the existing blue/pink accents
+   do not compete with the low-light surface colors. */
+:root.theme-dark {
+  --primary-50: 248 249 250;
+  --primary-100: 233 236 239;
+  --primary-200: 222 226 230;
+  --primary-300: 206 212 218;
+  --primary-400: 173 181 189;
+  --primary-500: 233 236 239;
+  --primary-600: 248 249 250;
+  --primary-700: 206 212 218;
+  --primary-800: 173 181 189;
+  --primary-900: 108 117 125;
+  --accent-50: 248 249 250;
+  --accent-100: 233 236 239;
+  --accent-200: 222 226 230;
+  --accent-300: 206 212 218;
+  --accent-400: 173 181 189;
+  --accent-500: 233 236 239;
+  --accent-600: 248 249 250;
+  --accent-700: 206 212 218;
+  --accent-800: 173 181 189;
+  --accent-900: 108 117 125;
+  --language-50: 248 249 250;
+  --language-100: 233 236 239;
+  --language-200: 222 226 230;
+  --language-300: 206 212 218;
+  --language-400: 173 181 189;
+  --language-500: 233 236 239;
+  --language-600: 248 249 250;
+  --language-700: 206 212 218;
+  --language-800: 173 181 189;
+  --language-900: 108 117 125;
+}
+
 :root.theme-dark .antigravity-card,
 :root.theme-dark .antigravity-card-static {
   background: rgba(31, 37, 45, 0.88);
@@ -321,4 +356,36 @@ body {
 :root.theme-dark .kanban-column {
   background: rgba(20, 25, 31, 0.52);
   border-color: #465160;
+}
+
+:root.theme-dark .sidebar-gradient {
+  background: linear-gradient(180deg, #212529 0%, #343a40 52%, #495057 100%);
+}
+
+:root.theme-dark .antigravity-button,
+:root.theme-dark button.bg-primary-500 {
+  color: #212529 !important;
+  background-color: #e9ecef !important;
+  box-shadow: 0 8px 20px rgba(233, 236, 239, 0.12);
+}
+
+:root.theme-dark .antigravity-button:hover,
+:root.theme-dark button.bg-primary-500:hover {
+  background-color: #f8f9fa !important;
+  box-shadow: 0 10px 24px rgba(248, 249, 250, 0.18);
+}
+
+:root.theme-dark .bg-primary-50,
+:root.theme-dark .bg-accent-50,
+:root.theme-dark .bg-language-50 {
+  background-color: rgba(233, 236, 239, 0.12) !important;
+}
+
+:root.theme-dark .text-primary-500,
+:root.theme-dark .text-primary-600,
+:root.theme-dark .text-accent-500,
+:root.theme-dark .text-accent-600,
+:root.theme-dark .text-language-500,
+:root.theme-dark .text-language-600 {
+  color: #e9ecef !important;
 }
