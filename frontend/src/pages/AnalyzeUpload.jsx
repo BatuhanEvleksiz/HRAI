@@ -110,8 +110,8 @@ export default function AnalyzeUpload() {
         addCandidate(savedCandidate);
         setAnalyzedCV(savedCandidate);
         setSaved(true);
-      } catch {
-        setError('CV veritabanına kaydedilemedi. Supabase bağlantısını kontrol edin.');
+      } catch (saveError) {
+        setError(saveError.message || 'CV veritabanına kaydedilemedi.');
       }
     }
   };

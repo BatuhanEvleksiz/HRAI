@@ -15,10 +15,11 @@ async function request(url, options = {}) {
       ...options,
       signal: options.signal || controller.signal,
     });
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      throw new Error(data.detail || data.message || `API Error: ${response.status}`);
     }
-    return await response.json();
+    return data;
   } catch (error) {
     console.error('API request failed:', error);
     throw error;
