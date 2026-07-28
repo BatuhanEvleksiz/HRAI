@@ -91,6 +91,15 @@ async def upload_cv(file: UploadFile = File(...)):
 @router.post("/save")
 def save_candidate(candidate: CandidateCreate):
     c_dict = candidate.dict()
+    # Keep JSONB fields in the shape expected by the Supabase trigger/schema.
+    for project in c_dict.get("projects") or []:
+        technologies = project.get("technologies", [])
+        if isinstance(technologies, str):
+            project["technologies"] = [
+                item.strip() for item in technologies.split(",") if item.strip()
+            ]
+        elif technologies is None:
+            project["technologies"] = []
     for key, val in c_dict.items():
         if isinstance(val, str):
             c_dict[key] = val.lower()
