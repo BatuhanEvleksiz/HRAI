@@ -7,12 +7,17 @@ load_dotenv()
 _raw_supabase_url = (os.getenv("SUPABASE_URL") or "").strip().rstrip("/")
 SUPABASE_URL = _raw_supabase_url.removesuffix("/rest/v1")
 SUPABASE_KEY = (os.getenv("SUPABASE_KEY") or "").strip()
+_last_client_error = None
 
 def get_supabase() -> Client | None:
+    global _last_client_error
     if SUPABASE_URL and SUPABASE_KEY and "your_" not in SUPABASE_URL and "your_" not in SUPABASE_KEY:
         try:
-            return create_client(SUPABASE_URL, SUPABASE_KEY)
-        except Exception:
+            client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            _last_client_error = None
+            return client
+        except Exception as exc:
+            _last_client_error = f"{type(exc).__name__}: {exc}"
             return None
     return None
 
@@ -22,7 +27,7 @@ def get_database_status() -> dict:
     try:
         client = get_supabase()
         if not client:
-            raise RuntimeError("Supabase client oluşturulamadı; URL veya key formatını kontrol edin.")
+            raise RuntimeError(_last_client_error or "Supabase client oluşturulamadı; URL veya key formatını kontrol edin.")
         client.table("candidates").select("id").limit(1).execute()
         return {"configured": True, "connected": True}
     except Exception as exc:
