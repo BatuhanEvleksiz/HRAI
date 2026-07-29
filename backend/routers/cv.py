@@ -69,12 +69,14 @@ async def upload_cv(file: UploadFile = File(...)):
     try:
         text = await asyncio.wait_for(
             asyncio.to_thread(extract_text_from_pdf, file_bytes),
-            timeout=15,
+            timeout=90,
         )
     except asyncio.TimeoutError:
         text = "PDF metni zamanında çıkarılamadı."
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     if not text:
-        text = "Demo extracted text from PDF."
+        raise HTTPException(status_code=422, detail="PDF'den okunabilir metin çıkarılamadı.")
 
     try:
         data = await asyncio.wait_for(asyncio.to_thread(analyze_cv, text), timeout=20)
