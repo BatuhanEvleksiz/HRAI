@@ -19,20 +19,33 @@ def fallback_cv_analysis(text: str, filename: str | None) -> dict:
             "python", "java", "javascript", "typescript", "react", "sql", "fastapi", "docker", "aws", "git",
             "embedded c", "c++", "assembly", "stm32", "esp32", "freertos", "spi", "i2c", "uart", "can bus",
             "modbus", "kicad", "mqtt", "esp-idf", "usb hid", "stm32cubeide",
+            "sap2000", "etabs", "sta4cad", "idecad", "robot structural", "tbdy 2018", "ts500",
+            "eurocode 2/3", "aisc 360", "revit structure", "autocad", "tekla structures", "navisworks",
         ] if skill in text.lower()
     ]
     profession_match = re.search(r"^([^|\n]+(?:Mühendisi|Developer|Engineer))", text, re.IGNORECASE | re.MULTILINE)
     university_match = re.search(r"(?:Lisans|Üniversite).*?[—-]\s*([^|\n]+)", text, re.IGNORECASE)
     first_line = next((line.strip() for line in text.splitlines() if line.strip()), "PDF adayı")
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    name_match = next(
+        (line for line in lines if re.fullmatch(r"[A-ZÇĞİÖŞÜ][A-Za-zÇĞİÖŞÜçğıöşü'-]+(?:\s+[A-ZÇĞİÖŞÜ][A-Za-zÇĞİÖŞÜçğıöşü'-]+){1,3}", line)),
+        first_line,
+    )
+    university_fallback = next((line for line in lines if "Üniversitesi" in line or "Ãœniversitesi" in line), "")
+    detected_languages = [
+        {"language": language, "level": ""}
+        for language in ["türkçe", "ingilizce", "almanca"]
+        if language in text.lower()
+    ]
     return {
-        "full_name": first_line[:255],
+        "full_name": name_match[:255],
         "email": email_match.group(0) if email_match else "",
         "phone": phone_match.group(0) if phone_match else "",
         "profession": profession_match.group(1).strip() if profession_match else "",
-        "university": university_match.group(1).strip() if university_match else "",
+        "university": university_match.group(1).strip() if university_match else university_fallback,
         "experience_years": 0,
         "skills": known_skills,
-        "languages": [],
+        "languages": detected_languages,
         "projects": [],
         "ai_summary": "Gemini yanıtı zaman aşımına uğradı. PDF metni çıkarıldı; aday bilgilerini gözden geçirip düzenleyebilirsiniz.",
         "raw_cv_text": text,
@@ -79,7 +92,7 @@ async def upload_cv(file: UploadFile = File(...)):
         raise HTTPException(status_code=422, detail="PDF'den okunabilir metin çıkarılamadı.")
 
     try:
-        data = await asyncio.wait_for(asyncio.to_thread(analyze_cv, text), timeout=20)
+        data = await asyncio.wait_for(asyncio.to_thread(analyze_cv, text), timeout=45)
     except asyncio.TimeoutError:
         data = fallback_cv_analysis(text, filename)
     except Exception:
