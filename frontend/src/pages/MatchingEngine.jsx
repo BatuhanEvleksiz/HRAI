@@ -221,15 +221,21 @@ export default function MatchingEngine() {
   const normalizeApiResults = (data) => data.map(item => {
     const candidate = item.candidate || item;
     const raw = item.score_breakdown || {};
+    const asBreakdown = (value, max) => {
+      if (value && typeof value === 'object') {
+        return { score: Number(value.score ?? 0), max: Number(value.max ?? max) };
+      }
+      return { score: Number(value ?? 0), max: Number(max) };
+    };
     return {
       ...candidate,
       totalScore: Math.round(item.total_score ?? item.totalScore ?? 0),
       breakdown: {
-        skill: raw.skill || raw.skills || { score: 0, max: weights.skill_weight },
-        project: raw.project || raw.projects || { score: 0, max: weights.project_weight },
-        llm_summary: raw.llm_summary || raw.ai_summary || { score: 0, max: weights.llm_summary_weight },
-        university: raw.university || { score: 0, max: weights.university_weight },
-        language: raw.language || raw.languages || { score: 0, max: weights.language_weight },
+        skill: asBreakdown(raw.skill ?? raw.skills, weights.skill_weight),
+        project: asBreakdown(raw.project ?? raw.projects, weights.project_weight),
+        llm_summary: asBreakdown(raw.llm_summary ?? raw.ai_summary, weights.llm_summary_weight),
+        university: asBreakdown(raw.university, weights.university_weight),
+        language: asBreakdown(raw.language ?? raw.languages, weights.language_weight),
       },
       skillMatches: item.skill_matches || item.skillMatches || [],
       aiComment: item.ai_comment || item.aiComment || 'API eşleştirmesi tamamlandı.',
