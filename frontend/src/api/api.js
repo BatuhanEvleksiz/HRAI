@@ -38,7 +38,7 @@ export const api = {
     formData.append('file', file);
     const request = new XMLHttpRequest();
     request.open('POST', `${API_BASE}/candidates/upload`);
-    request.timeout = 120000;
+    request.timeout = 180000;
     request.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) onProgress(Math.round((event.loaded / event.total) * 100));
     };
@@ -50,7 +50,7 @@ export const api = {
       else reject(new Error(data.detail || data.error || 'PDF analiz edilemedi.'));
     };
     request.onerror = () => reject(new Error('PDF dosyası gönderilemedi.'));
-    request.ontimeout = () => reject(new Error('PDF analizi 120 saniyede tamamlanamadı.'));
+    request.ontimeout = () => reject(new Error('PDF analizi 180 saniyede tamamlanamadı.'));
     request.send(formData);
   }),
   demoAnalyze: () => request('/candidates/demo-analyze', { method: 'POST' }),

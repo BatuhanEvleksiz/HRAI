@@ -82,7 +82,7 @@ async def upload_cv(file: UploadFile = File(...)):
     try:
         text = await asyncio.wait_for(
             asyncio.to_thread(extract_text_from_pdf, file_bytes),
-            timeout=90,
+            timeout=180,
         )
     except asyncio.TimeoutError:
         text = "PDF metni zamanında çıkarılamadı."
