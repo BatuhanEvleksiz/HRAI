@@ -32,37 +32,6 @@ const AVAILABLE_UNIVERSITIES = [
 
 const WEIGHT_STYLE = Object.fromEntries(WEIGHT_CONFIG.map(item => [item.key, item]));
 
-function redistributeWeights(weights, changedKey, nextValue) {
-  const keys = Object.keys(weights);
-  const clamped = Math.max(0, Math.min(100, Number(nextValue)));
-  const otherKeys = keys.filter(key => key !== changedKey);
-  const remaining = 100 - clamped;
-  const otherTotal = otherKeys.reduce((sum, key) => sum + Number(weights[key] || 0), 0);
-  const next = { ...weights, [changedKey]: clamped };
-
-  if (otherTotal === 0) {
-    otherKeys.forEach((key, index) => {
-      next[key] = index === 0 ? remaining : 0;
-    });
-    return next;
-  }
-
-  const shares = otherKeys.map(key => {
-    const raw = (Number(weights[key] || 0) / otherTotal) * remaining;
-    return { key, value: Math.floor(raw), fraction: raw - Math.floor(raw) };
-  });
-  let difference = remaining - shares.reduce((sum, share) => sum + share.value, 0);
-  shares.sort((a, b) => b.fraction - a.fraction);
-  shares.forEach(share => {
-    if (difference > 0) {
-      share.value += 1;
-      difference -= 1;
-    }
-    next[share.key] = share.value;
-  });
-  return next;
-}
-
 function InlineWeightSlider({ weightKey, weights, onChange }) {
   const config = WEIGHT_STYLE[weightKey];
   const value = Number(weights[weightKey] || 0);
@@ -143,6 +112,8 @@ export default function MatchingEngine() {
   const [matchingError, setMatchingError] = useState('');
   const [expandedCard, setExpandedCard] = useState(null);
   const [isSavingReport, setIsSavingReport] = useState(false);
+  const totalWeight = Object.values(weights).reduce((sum, value) => sum + Number(value || 0), 0);
+  const weightsValid = totalWeight === 100;
 
   const addLanguage = () => {
     if (!selectedLanguages.find(l => l.language === langToAdd)) {
@@ -163,7 +134,8 @@ export default function MatchingEngine() {
   };
 
   const handleInlineWeightChange = (key, value) => {
-    setWeights(redistributeWeights(weights, key, value));
+    const nextValue = Math.max(0, Math.min(100, Number(value)));
+    setWeights({ ...weights, [key]: nextValue });
   };
 
   const runDemoMatching = useCallback(() => {
@@ -552,6 +524,31 @@ export default function MatchingEngine() {
           <TagInput tags={llmKeywords} setTags={setLlmKeywords} placeholder="Örn: backend, microservices, deneyimli..." />
         </div>
 
+        <div className={`flex items-center justify-between rounded-xl border p-4 transition-colors ${
+          weightsValid
+            ? 'border-success-200 bg-success-50'
+            : 'border-danger-200 bg-danger-50'
+        }`}>
+          <div>
+            <p className={`text-sm font-semibold ${weightsValid ? 'text-success-700' : 'text-danger-700'}`}>
+              Toplam Ağırlık
+            </p>
+            <p className={`mt-0.5 text-xs ${weightsValid ? 'text-success-600' : 'text-danger-600'}`}>
+              {weightsValid
+                ? 'Eşleştirme için ağırlık dağılımı hazır.'
+                : `Toplam %100 olmalıdır; şu anda ${totalWeight > 100 ? `%${totalWeight - 100} fazla` : `%${100 - totalWeight} eksik`}.`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`text-2xl font-extrabold ${weightsValid ? 'text-success-600' : 'text-danger-600'}`}>
+              %{totalWeight}
+            </span>
+            {weightsValid
+              ? <CheckCircle className="h-5 w-5 text-success-600" />
+              : <AlertCircle className="h-5 w-5 text-danger-600" />}
+          </div>
+        </div>
+
         {/* Actions */}
         <div className="flex gap-3 pt-2">
           <button
@@ -562,7 +559,7 @@ export default function MatchingEngine() {
           </button>
           <button
             onClick={runApiMatching}
-            disabled={isSearching}
+            disabled={isSearching || !weightsValid}
             className="antigravity-button flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Target className="w-4 h-4" />
@@ -570,7 +567,7 @@ export default function MatchingEngine() {
           </button>
           <button
             onClick={runDemoMatching}
-            disabled={isSearching}
+            disabled={isSearching || !weightsValid}
             className="px-5 py-2.5 rounded-xl text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Sparkles className="w-4 h-4" />
