@@ -17,6 +17,7 @@ const statusConfig = {
 export default function SavedCVs() {
   const { candidates, deleteCandidate, updateCandidate } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [positionSearch, setPositionSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewingCV, setViewingCV] = useState(null);
   const [editingCV, setEditingCV] = useState(null);
@@ -39,8 +40,9 @@ export default function SavedCVs() {
     const matchesSearch = c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.profession?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.university?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPosition = c.profession?.toLowerCase().includes(positionSearch.toLowerCase().trim());
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesPosition && matchesStatus;
   });
 
   const handleDeleteLegacy = (id) => {
@@ -91,6 +93,10 @@ export default function SavedCVs() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="antigravity-input pl-10"
           />
+        </div>
+        <div className="relative flex-1 min-w-[210px]">
+          <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input type="text" placeholder="Pozisyon ara..." value={positionSearch} onChange={(e) => setPositionSearch(e.target.value)} className="antigravity-input pl-10" aria-label="Pozisyon ara" />
         </div>
         <div className="flex gap-2">
           {['all', 'pending', 'approved', 'rejected'].map(status => (

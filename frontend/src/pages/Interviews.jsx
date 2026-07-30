@@ -8,7 +8,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import {
   Plus, X, Check, Calendar, Clock, GripVertical, User, Briefcase, StickyNote, Mic, Square,
-  Upload, FileAudio, Sparkles, Save, Loader2, MessageSquareText,
+  Upload, FileAudio, Sparkles, Save, Loader2, MessageSquareText, Search,
 } from 'lucide-react';
 
 function capitalize(str) {
@@ -170,6 +170,8 @@ Aday: Trafik arttığında performans sorunu yaşadık. Logları inceleyip önbe
 
 function InterviewAssistant({ interviews, candidates }) {
   const [selectedInterviewId, setSelectedInterviewId] = useState('');
+  const [interviewSearch, setInterviewSearch] = useState('');
+  const [isInterviewPickerOpen, setIsInterviewPickerOpen] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [summary, setSummary] = useState('');
   const [evaluation, setEvaluation] = useState('');
@@ -186,6 +188,23 @@ function InterviewAssistant({ interviews, candidates }) {
 
   const selectedInterview = interviews.find(item => item.id === selectedInterviewId);
   const selectedCandidate = candidates.find(item => item.id === selectedInterview?.candidate_id);
+  const matchingInterviews = [...interviews]
+    .filter(item => {
+      const query = interviewSearch.trim().toLocaleLowerCase('tr-TR');
+      return !query || `${item.candidate_name || ''} ${item.position || ''} ${item.interview_date || ''}`.toLocaleLowerCase('tr-TR').includes(query);
+    })
+    .sort((a, b) => {
+      const query = interviewSearch.trim().toLocaleLowerCase('tr-TR');
+      const aStarts = (a.candidate_name || '').toLocaleLowerCase('tr-TR').startsWith(query) ? 1 : 0;
+      const bStarts = (b.candidate_name || '').toLocaleLowerCase('tr-TR').startsWith(query) ? 1 : 0;
+      return bStarts - aStarts;
+    });
+
+  const selectInterview = (interview) => {
+    setSelectedInterviewId(interview.id);
+    setInterviewSearch(interview.candidate_name || '');
+    setIsInterviewPickerOpen(false);
+  };
 
   const startLiveInterview = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -315,12 +334,20 @@ function InterviewAssistant({ interviews, candidates }) {
             </div>
             <p className="text-sm text-gray-500 mt-1">Konuşmayı metne dönüştürün, yalnızca istediğiniz analiz için LLM kullanın.</p>
           </div>
-          <div className="min-w-[240px]">
+          <div className="min-w-[240px] relative">
             <label className="text-xs font-semibold text-gray-600 mb-1 block">Randevulu mülakat</label>
-            <select value={selectedInterviewId} onChange={e => setSelectedInterviewId(e.target.value)} className="antigravity-select">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input value={interviewSearch} onFocus={() => setIsInterviewPickerOpen(true)} onChange={event => { setInterviewSearch(event.target.value); setIsInterviewPickerOpen(true); }} placeholder="İsim ara ve mülakat seç..." className="antigravity-select pl-10" aria-label="Mülakat adayı ara" />
+            </div>
+            {isInterviewPickerOpen && <div className="absolute left-0 right-0 top-[62px] z-30 max-h-64 overflow-y-auto rounded-xl border border-surface-200 bg-white shadow-xl">
+              {matchingInterviews.length ? matchingInterviews.map(item => <button key={item.id} type="button" onClick={() => selectInterview(item)} className={`w-full px-3 py-2.5 text-left hover:bg-primary-50 ${item.id === selectedInterviewId ? 'bg-primary-50' : ''}`}><span className="block text-sm font-semibold text-gray-800">{capitalize(item.candidate_name)}</span><span className="block text-xs text-gray-500">{capitalize(item.position)} · {item.interview_date} {item.interview_time}</span></button>) : <p className="px-3 py-4 text-xs text-gray-400">Eşleşen mülakat bulunamadı.</p>}
+            </div>}
+            {false && <select value={selectedInterviewId} onChange={e => setSelectedInterviewId(e.target.value)} className="antigravity-select">
               <option value="">Mülakat seçin...</option>
               {interviews.map(item => <option key={item.id} value={item.id}>{capitalize(item.candidate_name)} - {item.interview_date}</option>)}
             </select>
+            }
           </div>
         </div>
         {selectedCandidate && <p className="text-xs text-primary-600 mt-3">Kayıt adaya bağlanacak: {capitalize(selectedCandidate.full_name)}</p>}
