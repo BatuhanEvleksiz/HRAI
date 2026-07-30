@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Users, CheckCircle2, XCircle, Clock, CalendarDays, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 const barColors = [
   'rgb(var(--primary-500))',
@@ -9,34 +9,83 @@ const barColors = [
   'rgb(var(--accent-500))',
   'rgb(var(--primary-300))',
   'rgb(var(--accent-400))',
+  'rgb(var(--primary-400))',
+  'rgb(var(--primary-600))',
 ];
 
-function capitalize(str) {
-  if (!str) return '';
-  return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+const statusColors = {
+  approved: '#10b981',
+  pending: '#f59e0b',
+  rejected: '#ef4444',
+};
+
+const statusLabels = { approved: 'Onaylı', pending: 'Beklemede', rejected: 'Reddedildi' };
+
+function capitalize(value) {
+  if (!value) return '';
+  return value.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+function BarTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0].payload;
+  return (
+    <div className="rounded-xl border border-surface-200 bg-white/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
+      <p className="font-semibold text-gray-800">{label}</p>
+      <p className="mt-1 text-gray-500">{item.count} aday · %{item.percentage}</p>
+    </div>
+  );
+}
+
+function DonutTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0].payload;
+  return (
+    <div className="rounded-xl border border-surface-200 bg-white/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
+      <p className="font-semibold text-gray-800">{item.name}</p>
+      <p className="mt-1 text-gray-500">{item.value} aday · %{item.percentage}</p>
+    </div>
+  );
 }
 
 export default function Dashboard() {
   const { candidates, interviews } = useStore();
+  const [professionStatus, setProfessionStatus] = useState('all');
 
   const totalCVs = candidates.length;
-  const approved = candidates.filter(c => c.status === 'approved').length;
-  const rejected = candidates.filter(c => c.status === 'rejected').length;
-  const pending = candidates.filter(c => c.status === 'pending').length;
+  const approved = candidates.filter(candidate => candidate.status === 'approved').length;
+  const rejected = candidates.filter(candidate => candidate.status === 'rejected').length;
+  const pending = candidates.filter(candidate => candidate.status === 'pending').length;
 
-  // Profession distribution
-  const professionMap = {};
-  candidates.forEach(c => {
-    const prof = c.profession || 'belirtilmemiş';
-    professionMap[prof] = (professionMap[prof] || 0) + 1;
-  });
-  const professionData = Object.entries(professionMap)
-    .map(([name, count]) => ({ name: capitalize(name), count }))
-    .sort((a, b) => b.count - a.count);
+  const professionData = useMemo(() => {
+    const visible = professionStatus === 'all'
+      ? candidates
+      : candidates.filter(candidate => candidate.status === professionStatus);
+    const counts = {};
+    visible.forEach(candidate => {
+      const profession = candidate.profession || 'Belirtilmemiş';
+      counts[profession] = (counts[profession] || 0) + 1;
+    });
+    const sorted = Object.entries(counts)
+      .map(([name, count]) => ({ name: capitalize(name), count }))
+      .sort((a, b) => b.count - a.count);
+    const top = sorted.slice(0, 6);
+    const otherCount = sorted.slice(6).reduce((sum, item) => sum + item.count, 0);
+    if (otherCount) top.push({ name: 'Diğer', count: otherCount });
+    const total = visible.length || 1;
+    return top.map(item => ({ ...item, percentage: Math.round((item.count / total) * 100) }));
+  }, [candidates, professionStatus]);
 
-  // Today's interviews
+  const statusData = useMemo(() => {
+    const total = candidates.length || 1;
+    return ['approved', 'pending', 'rejected'].map(status => {
+      const value = candidates.filter(candidate => candidate.status === status).length;
+      return { name: statusLabels[status], status, value, percentage: Math.round((value / total) * 100) };
+    });
+  }, [candidates]);
+
   const today = new Date().toISOString().split('T')[0];
-  const todayInterviews = interviews.filter(i => i.interview_date === today);
+  const todayInterviews = interviews.filter(interview => interview.interview_date === today);
 
   const stats = [
     { label: 'Toplam CV', value: totalCVs, icon: Users, color: 'text-primary-500', bg: 'bg-primary-50', ring: 'ring-primary-100' },
@@ -47,83 +96,48 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Genel bakış ve istatistikler</p>
+        <p className="text-gray-500 mt-1">Genel bakış ve İK operasyon özeti</p>
       </div>
 
-      {/* Today's Plan */}
-      <div className="antigravity-card-static p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <CalendarDays className="w-5 h-5 text-primary-500" />
-          <h2 className="text-sm font-semibold text-gray-700">Bugünün Planı</h2>
-        </div>
-        {todayInterviews.length > 0 ? (
-          <div className="space-y-2">
-            {todayInterviews.map((interview) => (
-              <div key={interview.id} className="flex items-center justify-between py-2 px-4 bg-primary-50/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 bg-primary-500 text-white text-xs font-bold rounded-lg">
-                    {interview.interview_time}
-                  </span>
-                  <span className="font-medium text-gray-800">{capitalize(interview.candidate_name)}</span>
-                </div>
-                <span className="text-sm text-gray-500">{capitalize(interview.position)}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400 italic">Bugün planlanmış mülakat bulunmuyor.</p>
-        )}
-      </div>
-
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <div
-            key={stat.label}
-            className="antigravity-card p-5 flex items-center justify-between group cursor-default"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
-            <div>
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{stat.label}</p>
-              <p className="text-4xl font-extrabold text-gray-900 mt-1">{stat.value}</p>
-            </div>
-            <div className={`w-12 h-12 rounded-2xl ${stat.bg} ring-4 ${stat.ring} flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
-              <stat.icon className={`w-6 h-6 ${stat.color}`} />
-            </div>
+        {stats.map((stat, index) => (
+          <div key={stat.label} className="antigravity-card p-5 flex items-center justify-between group" style={{ animationDelay: `${index * 100}ms` }}>
+            <div><p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{stat.label}</p><p className="text-4xl font-extrabold text-gray-900 mt-1">{stat.value}</p></div>
+            <div className={`w-12 h-12 rounded-2xl ${stat.bg} ring-4 ${stat.ring} flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}><stat.icon className={`w-6 h-6 ${stat.color}`} /></div>
           </div>
         ))}
       </div>
 
-      {/* Profession Distribution Chart */}
-      <div className="antigravity-card-static p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <TrendingUp className="w-5 h-5 text-primary-500" />
-          <h2 className="text-sm font-semibold text-gray-700">Meslek Dağılımı</h2>
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)] gap-6">
+        <div className="antigravity-card-static p-6 min-w-0">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary-500" /><div><h2 className="text-sm font-semibold text-gray-700">Meslek Dağılımı</h2><p className="text-xs text-gray-400 mt-0.5">Pozisyonlara göre kayıtlı adaylar</p></div></div>
+            <select value={professionStatus} onChange={event => setProfessionStatus(event.target.value)} aria-label="Meslek dağılımı durum filtresi" className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs font-medium text-gray-600 outline-none focus:border-primary-400">
+              <option value="all">Tüm adaylar</option><option value="approved">Onaylı</option><option value="pending">Beklemede</option><option value="rejected">Reddedildi</option>
+            </select>
+          </div>
+          {professionData.length ? (
+            <ResponsiveContainer width="100%" height={Math.max(230, professionData.length * 42)}>
+              <BarChart data={professionData} layout="vertical" margin={{ top: 4, right: 18, left: 12, bottom: 4 }}>
+                <XAxis type="number" hide allowDecimals={false} /><YAxis type="category" dataKey="name" width={142} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgb(var(--primary-50))' }} /><Bar dataKey="count" radius={[0, 8, 8, 0]} barSize={18}>{professionData.map((item, index) => <Cell key={item.name} fill={barColors[index % barColors.length]} />)}</Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <p className="py-16 text-center text-sm text-gray-400">Bu filtre için aday bulunmuyor.</p>}
         </div>
-        <div className="space-y-3">
-          {professionData.map((item, idx) => {
-            const maxCount = professionData[0]?.count || 1;
-            const percentage = (item.count / maxCount) * 100;
-            return (
-              <div key={item.name} className="flex items-center gap-4">
-                <span className="text-sm text-gray-600 w-48 truncate">{item.name}</span>
-                <div className="flex-1 h-8 bg-surface-100 rounded-full overflow-hidden relative">
-                  <div
-                    className="h-full rounded-full progress-bar-animated transition-all duration-500"
-                    style={{
-                      width: `${percentage}%`,
-                      background: `linear-gradient(90deg, ${barColors[idx % barColors.length]}, ${barColors[(idx + 1) % barColors.length]})`,
-                    }}
-                  />
-                </div>
-                <span className="text-sm font-bold text-gray-700 w-8 text-right">{item.count}</span>
-              </div>
-            );
-          })}
+
+        <div className="antigravity-card-static p-6 min-w-0">
+          <div className="flex items-center gap-2 mb-2"><CheckCircle2 className="w-5 h-5 text-primary-500" /><div><h2 className="text-sm font-semibold text-gray-700">Aday Durumu</h2><p className="text-xs text-gray-400 mt-0.5">CV havuzunun güncel özeti</p></div></div>
+          <div className="relative h-56"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={statusData} dataKey="value" nameKey="name" innerRadius={62} outerRadius={88} paddingAngle={3} strokeWidth={0}>{statusData.map(item => <Cell key={item.status} fill={statusColors[item.status]} />)}</Pie><Tooltip content={<DonutTooltip />} /></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"><span className="text-3xl font-extrabold text-gray-900">{totalCVs}</span><span className="text-xs text-gray-400">Toplam CV</span></div></div>
+          <div className="space-y-2">{statusData.map(item => <div key={item.status} className="flex items-center justify-between text-xs"><span className="flex items-center gap-2 text-gray-600"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: statusColors[item.status] }} />{item.name}</span><span className="font-semibold text-gray-700">{item.value} <span className="font-normal text-gray-400">(%{item.percentage})</span></span></div>)}</div>
         </div>
+      </div>
+
+      <div className="antigravity-card-static p-5">
+        <div className="flex items-center gap-2 mb-3"><CalendarDays className="w-5 h-5 text-primary-500" /><h2 className="text-sm font-semibold text-gray-700">Bugünün Planı</h2></div>
+        {todayInterviews.length ? <div className="space-y-2">{todayInterviews.map(interview => <div key={interview.id} className="flex items-center justify-between py-2 px-4 bg-primary-50/50 rounded-xl"><div className="flex items-center gap-3"><span className="px-3 py-1 bg-primary-500 text-white text-xs font-bold rounded-lg">{interview.interview_time}</span><span className="font-medium text-gray-800">{capitalize(interview.candidate_name)}</span></div><span className="text-sm text-gray-500">{capitalize(interview.position)}</span></div>)}</div> : <p className="text-sm text-gray-400 italic">Bugün planlanmış mülakat bulunmuyor.</p>}
       </div>
     </div>
   );
