@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Users, CheckCircle2, XCircle, Clock, CalendarDays, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Sector } from 'recharts';
 
 const barColors = [
   'rgb(var(--primary-500))',
@@ -48,9 +48,28 @@ function DonutTooltip({ active, payload }) {
   );
 }
 
+function ActiveDonutShape({ cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill }) {
+  const angle = -midAngle * (Math.PI / 180);
+  const offset = 7;
+  return (
+    <Sector
+      cx={cx + Math.cos(angle) * offset}
+      cy={cy + Math.sin(angle) * offset}
+      innerRadius={innerRadius}
+      outerRadius={outerRadius + 4}
+      startAngle={startAngle}
+      endAngle={endAngle}
+      fill={fill}
+      stroke="rgba(255,255,255,0.95)"
+      strokeWidth={2}
+    />
+  );
+}
+
 export default function Dashboard() {
   const { candidates, interviews } = useStore();
   const [professionStatus, setProfessionStatus] = useState('all');
+  const [activeStatusIndex, setActiveStatusIndex] = useState(null);
 
   const totalCVs = candidates.length;
   const approved = candidates.filter(candidate => candidate.status === 'approved').length;
@@ -130,7 +149,7 @@ export default function Dashboard() {
 
         <div className="antigravity-card-static p-6 min-w-0">
           <div className="flex items-center gap-2 mb-2"><CheckCircle2 className="w-5 h-5 text-primary-500" /><div><h2 className="text-sm font-semibold text-gray-700">Aday Durumu</h2><p className="text-xs text-gray-400 mt-0.5">CV havuzunun güncel özeti</p></div></div>
-          <div className="relative h-56"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={statusData} dataKey="value" nameKey="name" innerRadius={62} outerRadius={88} paddingAngle={3} strokeWidth={0}>{statusData.map(item => <Cell key={item.status} fill={statusColors[item.status]} />)}</Pie><Tooltip content={<DonutTooltip />} /></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"><span className="text-3xl font-extrabold text-gray-900">{totalCVs}</span><span className="text-xs text-gray-400">Toplam CV</span></div></div>
+          <div className="relative h-56"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={statusData} dataKey="value" nameKey="name" innerRadius={62} outerRadius={88} paddingAngle={3} strokeWidth={0} activeIndex={activeStatusIndex ?? undefined} activeShape={<ActiveDonutShape />} onMouseEnter={(_, index) => setActiveStatusIndex(index)} onMouseLeave={() => setActiveStatusIndex(null)}>{statusData.map(item => <Cell key={item.status} fill={statusColors[item.status]} />)}</Pie><Tooltip content={<DonutTooltip />} /></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"><span className="text-3xl font-extrabold text-gray-900">{totalCVs}</span><span className="text-xs text-gray-400">Toplam CV</span></div></div>
           <div className="space-y-2">{statusData.map(item => <div key={item.status} className="flex items-center justify-between text-xs"><span className="flex items-center gap-2 text-gray-600"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: statusColors[item.status] }} />{item.name}</span><span className="font-semibold text-gray-700">{item.value} <span className="font-normal text-gray-400">(%{item.percentage})</span></span></div>)}</div>
         </div>
       </div>
