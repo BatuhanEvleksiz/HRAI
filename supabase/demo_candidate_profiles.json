@@ -1,0 +1,182 @@
+[
+  {
+    "full_name": "Barış Erdem",
+    "email": "baris.erdem.demo@ikai.example",
+    "phone": "+90 555 710 1001",
+    "profession": "Backend Developer",
+    "university": "Boğaziçi Üniversitesi",
+    "experience_years": 5,
+    "skills": ["python", "fastapi", "postgresql", "redis", "docker", "kubernetes", "aws", "git"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "c1"}],
+    "projects": [
+      {"title": "Ödeme Altyapısı", "description": "Yüksek trafikli işlemler için ölçeklenebilir ödeme servisleri geliştirdi.", "technologies": ["python", "fastapi", "postgresql", "redis"]},
+      {"title": "Sipariş Mikroservisleri", "description": "Kubernetes üzerinde çalışan olay güdümlü sipariş sistemi tasarladı.", "technologies": ["kubernetes", "docker", "aws", "kafka"]}
+    ],
+    "ai_summary": "Ölçeklenebilir API, mikroservis ve bulut mimarilerinde güçlü; üretim sistemlerinde sorumluluk almış deneyimli backend geliştirici.",
+    "raw_cv_text": "Barış Erdem - Backend Developer. Python, FastAPI, PostgreSQL, Redis, Docker, Kubernetes ve AWS deneyimi.",
+    "original_filename": "baris_erdem_backend_cv.pdf",
+    "radar_scores": {"technical_skills": 9.2, "project_experience": 8.8, "experience_level": 8.5, "language_proficiency": 9.0, "communication_clarity": 8.2, "technical_depth": 9.1}
+  },
+  {
+    "full_name": "Selin Aksoy",
+    "email": "selin.aksoy.demo@ikai.example",
+    "phone": "+90 555 710 1002",
+    "profession": "Backend Developer",
+    "university": "Orta Doğu Teknik Üniversitesi",
+    "experience_years": 4,
+    "skills": ["java", "spring boot", "postgresql", "kafka", "docker", "microservices", "rest api", "git"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "c1"}, {"language": "almanca", "level": "b1"}],
+    "projects": [
+      {"title": "Finansal İşlem Motoru", "description": "Gerçek zamanlı finansal olayların işlendiği mikroservis altyapısı geliştirdi.", "technologies": ["java", "spring boot", "kafka", "postgresql"]},
+      {"title": "Kimlik Servisi", "description": "Rol tabanlı erişim ve denetim kayıtları içeren kimlik servisi tasarladı.", "technologies": ["java", "spring boot", "docker"]}
+    ],
+    "ai_summary": "Kurumsal Java ve olay güdümlü sistemlerde deneyimli, kod kalitesi ve test süreçleri güçlü backend geliştirici.",
+    "raw_cv_text": "Selin Aksoy - Backend Developer. Java, Spring Boot, Kafka ve PostgreSQL ile kurumsal uygulama geliştirme deneyimi.",
+    "original_filename": "selin_aksoy_backend_cv.pdf",
+    "radar_scores": {"technical_skills": 8.8, "project_experience": 8.4, "experience_level": 7.8, "language_proficiency": 9.2, "communication_clarity": 8.7, "technical_depth": 8.8}
+  },
+  {
+    "full_name": "Mert Kaya",
+    "email": "mert.kaya.demo@ikai.example",
+    "phone": "+90 555 710 1003",
+    "profession": "Backend Developer",
+    "university": "İstanbul Teknik Üniversitesi",
+    "experience_years": 6,
+    "skills": ["c#", ".net", "sql", "azure", "rabbitmq", "docker", "ci/cd", "microservices"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "b2"}],
+    "projects": [
+      {"title": "ERP Entegrasyon Platformu", "description": "Kurumsal sistemler arasında güvenilir veri aktarım servisleri geliştirdi.", "technologies": ["c#", ".net", "rabbitmq", "sql"]},
+      {"title": "Azure Dağıtım Hattı", "description": "Test, güvenlik kontrolü ve otomatik dağıtım adımlarını kurdu.", "technologies": ["azure", "docker", "ci/cd"]}
+    ],
+    "ai_summary": ".NET, kurumsal entegrasyon ve Azure operasyonlarında ileri seviyede deneyimli kıdemli backend geliştirici.",
+    "raw_cv_text": "Mert Kaya - Backend Developer. C#, .NET, Azure, RabbitMQ ve SQL tabanlı kurumsal sistemlerde altı yıl deneyim.",
+    "original_filename": "mert_kaya_backend_cv.pdf",
+    "radar_scores": {"technical_skills": 9.0, "project_experience": 9.1, "experience_level": 9.7, "language_proficiency": 8.0, "communication_clarity": 7.9, "technical_depth": 9.3}
+  },
+  {
+    "full_name": "Derya Yalçın",
+    "email": "derya.yalcin.demo@ikai.example",
+    "phone": "+90 555 710 1004",
+    "profession": "Data Scientist",
+    "university": "Hacettepe Üniversitesi",
+    "experience_years": 4,
+    "skills": ["python", "pandas", "scikit-learn", "sql", "xgboost", "statistics", "mlflow", "docker"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "c1"}],
+    "projects": [
+      {"title": "Müşteri Kaybı Tahmini", "description": "Dengesiz veri üzerinde açıklanabilir müşteri kaybı modeli geliştirdi.", "technologies": ["python", "xgboost", "mlflow"]},
+      {"title": "Talep Tahminleme", "description": "Mağaza ve ürün kırılımında zaman serisi tahmin sistemi kurdu.", "technologies": ["python", "pandas", "sql"]}
+    ],
+    "ai_summary": "İstatistiksel modelleme, deney tasarımı ve iş sonucuna dönük makine öğrenmesi projelerinde güçlü data scientist.",
+    "raw_cv_text": "Derya Yalçın - Data Scientist. Python, istatistik, XGBoost, SQL ve MLflow ile dört yıl deneyim.",
+    "original_filename": "derya_yalcin_data_scientist_cv.pdf",
+    "radar_scores": {"technical_skills": 8.9, "project_experience": 8.6, "experience_level": 7.8, "language_proficiency": 9.0, "communication_clarity": 8.8, "technical_depth": 9.0}
+  },
+  {
+    "full_name": "Onur Şahin",
+    "email": "onur.sahin.demo@ikai.example",
+    "phone": "+90 555 710 1005",
+    "profession": "Data Scientist",
+    "university": "Yıldız Teknik Üniversitesi",
+    "experience_years": 3,
+    "skills": ["python", "sql", "pytorch", "nlp", "power bi", "statistics", "airflow", "git"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "b2"}],
+    "projects": [
+      {"title": "Metin Sınıflandırma", "description": "Müşteri taleplerini otomatik yönlendiren Türkçe NLP modeli geliştirdi.", "technologies": ["python", "pytorch", "nlp"]},
+      {"title": "Satış Analitiği", "description": "Yönetim ekipleri için tahmin ve performans panelleri oluşturdu.", "technologies": ["sql", "power bi", "airflow"]}
+    ],
+    "ai_summary": "NLP, veri görselleştirme ve analitik ürün geliştirme konularında dengeli deneyime sahip data scientist.",
+    "raw_cv_text": "Onur Şahin - Data Scientist. Python, SQL, PyTorch, NLP ve Power BI deneyimi.",
+    "original_filename": "onur_sahin_data_scientist_cv.pdf",
+    "radar_scores": {"technical_skills": 8.1, "project_experience": 7.8, "experience_level": 6.8, "language_proficiency": 8.0, "communication_clarity": 8.5, "technical_depth": 8.2}
+  },
+  {
+    "full_name": "Ece Aydın",
+    "email": "ece.aydin.ai.demo@ikai.example",
+    "phone": "+90 555 710 1006",
+    "profession": "AI Developer",
+    "university": "Bilkent Üniversitesi",
+    "experience_years": 4,
+    "skills": ["python", "pytorch", "transformers", "llm", "rag", "fastapi", "docker", "vector database"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "c1"}, {"language": "fransızca", "level": "b1"}],
+    "projects": [
+      {"title": "Kurumsal Bilgi Asistanı", "description": "Kaynak gösteren ve yetkilendirme uygulayan RAG asistanı geliştirdi.", "technologies": ["llm", "rag", "vector database", "fastapi"]},
+      {"title": "Model Değerlendirme Hattı", "description": "LLM cevap kalitesi ve güvenlik ölçümlerini otomatikleştirdi.", "technologies": ["python", "pytorch", "docker"]}
+    ],
+    "ai_summary": "Üretim ortamında LLM, RAG ve model değerlendirme sistemleri geliştirmiş güçlü AI developer.",
+    "raw_cv_text": "Ece Aydın - AI Developer. LLM, RAG, PyTorch, Transformers, FastAPI ve vektör veritabanları deneyimi.",
+    "original_filename": "ece_aydin_ai_developer_cv.pdf",
+    "radar_scores": {"technical_skills": 9.4, "project_experience": 8.8, "experience_level": 7.8, "language_proficiency": 9.2, "communication_clarity": 8.9, "technical_depth": 9.5}
+  },
+  {
+    "full_name": "Kerem Çetin",
+    "email": "kerem.cetin.demo@ikai.example",
+    "phone": "+90 555 710 1007",
+    "profession": "AI Developer",
+    "university": "Koç Üniversitesi",
+    "experience_years": 3,
+    "skills": ["python", "tensorflow", "computer vision", "opencv", "onnx", "mlops", "kubernetes", "gcp"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "c1"}],
+    "projects": [
+      {"title": "Görsel Kalite Kontrolü", "description": "Üretim hattında gerçek zamanlı hata tespiti yapan görüntü modeli geliştirdi.", "technologies": ["tensorflow", "opencv", "onnx"]},
+      {"title": "Model Servis Platformu", "description": "Modeller için sürümleme, izleme ve otomatik ölçekleme altyapısı kurdu.", "technologies": ["mlops", "kubernetes", "gcp"]}
+    ],
+    "ai_summary": "Bilgisayarlı görü, model optimizasyonu ve MLOps konularında üretim tecrübesi bulunan AI developer.",
+    "raw_cv_text": "Kerem Çetin - AI Developer. TensorFlow, OpenCV, ONNX, Kubernetes ve GCP deneyimi.",
+    "original_filename": "kerem_cetin_ai_developer_cv.pdf",
+    "radar_scores": {"technical_skills": 8.8, "project_experience": 8.3, "experience_level": 6.8, "language_proficiency": 9.0, "communication_clarity": 8.0, "technical_depth": 9.0}
+  },
+  {
+    "full_name": "İrem Demir",
+    "email": "irem.demir.demo@ikai.example",
+    "phone": "+90 555 710 1008",
+    "profession": "İnşaat Mühendisi",
+    "university": "Orta Doğu Teknik Üniversitesi",
+    "experience_years": 5,
+    "skills": ["etabs", "sap2000", "autocad", "revit structure", "tbdy 2018", "betonarme", "bim", "metraj"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "c1"}],
+    "projects": [
+      {"title": "Hastane Yapısı", "description": "Betonarme taşıyıcı sistem analizi ve BIM koordinasyonu yürüttü.", "technologies": ["etabs", "revit structure", "tbdy 2018"]},
+      {"title": "Yapı Güçlendirme", "description": "Mevcut yapıların deprem performansı ve güçlendirme tasarımını gerçekleştirdi.", "technologies": ["sap2000", "autocad"]}
+    ],
+    "ai_summary": "Yapısal analiz, betonarme tasarım ve BIM koordinasyonunda deneyimli inşaat mühendisi.",
+    "raw_cv_text": "İrem Demir - İnşaat Mühendisi. ETABS, SAP2000, Revit Structure, TBDY 2018 ve BIM deneyimi.",
+    "original_filename": "irem_demir_insaat_muhendisi_cv.pdf",
+    "radar_scores": {"technical_skills": 8.7, "project_experience": 8.8, "experience_level": 8.5, "language_proficiency": 9.0, "communication_clarity": 8.6, "technical_depth": 8.9}
+  },
+  {
+    "full_name": "Burak Arslan",
+    "email": "burak.arslan.demo@ikai.example",
+    "phone": "+90 555 710 1009",
+    "profession": "Endüstri Mühendisi",
+    "university": "İstanbul Teknik Üniversitesi",
+    "experience_years": 4,
+    "skills": ["lean", "six sigma", "sql", "power bi", "sap", "process optimization", "forecasting", "excel"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "b2"}, {"language": "almanca", "level": "b1"}],
+    "projects": [
+      {"title": "Üretim Hat Dengeleme", "description": "Çevrim süresini ve ara stokları azaltan hat dengeleme çalışması yürüttü.", "technologies": ["lean", "six sigma", "excel"]},
+      {"title": "Tedarik Planlama", "description": "Talep tahmini ve satın alma kararları için karar destek paneli geliştirdi.", "technologies": ["sql", "power bi", "sap"]}
+    ],
+    "ai_summary": "Süreç optimizasyonu, üretim planlama ve analitik karar destek sistemlerinde deneyimli endüstri mühendisi.",
+    "raw_cv_text": "Burak Arslan - Endüstri Mühendisi. Lean, Six Sigma, SAP, SQL ve Power BI deneyimi.",
+    "original_filename": "burak_arslan_endustri_muhendisi_cv.pdf",
+    "radar_scores": {"technical_skills": 8.2, "project_experience": 8.4, "experience_level": 7.8, "language_proficiency": 8.5, "communication_clarity": 8.8, "technical_depth": 8.0}
+  },
+  {
+    "full_name": "Nazlı Koç",
+    "email": "nazli.koc.demo@ikai.example",
+    "phone": "+90 555 710 1010",
+    "profession": "Elektrik Elektronik Mühendisi",
+    "university": "Hacettepe Üniversitesi",
+    "experience_years": 3,
+    "skills": ["embedded c", "c++", "stm32", "freertos", "kicad", "mqtt", "can bus", "python"],
+    "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "b2"}],
+    "projects": [
+      {"title": "Endüstriyel IoT Kartı", "description": "Sensör verilerini MQTT ile aktaran düşük güç tüketimli kontrol kartı geliştirdi.", "technologies": ["stm32", "freertos", "kicad", "mqtt"]},
+      {"title": "Araç Haberleşme Modülü", "description": "CAN Bus üzerinden teşhis ve veri toplama modülü tasarladı.", "technologies": ["embedded c", "can bus", "python"]}
+    ],
+    "ai_summary": "Gömülü sistem, elektronik kart tasarımı ve endüstriyel haberleşme protokollerinde deneyimli mühendis.",
+    "raw_cv_text": "Nazlı Koç - Elektrik Elektronik Mühendisi. Embedded C, STM32, FreeRTOS, KiCad, MQTT ve CAN Bus deneyimi.",
+    "original_filename": "nazli_koc_elektrik_elektronik_cv.pdf",
+    "radar_scores": {"technical_skills": 8.6, "project_experience": 8.1, "experience_level": 6.8, "language_proficiency": 8.0, "communication_clarity": 8.3, "technical_depth": 8.7}
+  }
+]

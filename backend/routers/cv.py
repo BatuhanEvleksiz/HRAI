@@ -160,6 +160,16 @@ def save_candidate(candidate: CandidateCreate):
             res = supabase.table("candidates").insert(c_dict).execute()
             return res.data[0]
         except Exception as e:
+            error_message = str(e)
+            if "radar_scores" in error_message and "PGRST204" in error_message:
+                legacy_candidate = {
+                    key: value for key, value in c_dict.items() if key != "radar_scores"
+                }
+                try:
+                    res = supabase.table("candidates").insert(legacy_candidate).execute()
+                    return res.data[0]
+                except Exception as legacy_error:
+                    raise HTTPException(status_code=500, detail=str(legacy_error))
             raise HTTPException(status_code=500, detail=str(e))
     
     raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; CV sahte olarak kaydedilmedi.")
