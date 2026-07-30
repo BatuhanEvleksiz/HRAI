@@ -157,9 +157,18 @@ const DEMO_REPORTS = [
     position: 'Backend Developer', created_at: '2026-07-18T10:00:00Z',
     filter_criteria: { skills: ['python', 'docker', 'sql'], languages: [{ language: 'ingilizce', level: 'b2' }] },
     matched_candidates: [
-      { candidate_name: 'Ahmet Yılmaz', score: 85 },
-      { candidate_name: 'Mehmet Demir', score: 78 },
-      { candidate_name: 'Seda Yıldız', score: 72 },
+      {
+        candidate_id: '1', candidate_name: 'Ahmet Yılmaz', score: 85,
+        radar_scores: { technical_skills: 8.5, project_experience: 8, experience_level: 8, language_proficiency: 8, communication_clarity: 7.5, technical_depth: 8.5 },
+      },
+      {
+        candidate_id: '3', candidate_name: 'Mehmet Demir', score: 78,
+        radar_scores: { technical_skills: 8, project_experience: 8.5, experience_level: 10, language_proficiency: 8, communication_clarity: 7, technical_depth: 8 },
+      },
+      {
+        candidate_id: '8', candidate_name: 'Seda Yıldız', score: 72,
+        radar_scores: { technical_skills: 7.5, project_experience: 7.5, experience_level: 6, language_proficiency: 9, communication_clarity: 6.5, technical_depth: 7 },
+      },
     ],
     ai_summary: 'Backend Developer pozisyonu için 3 güçlü aday belirlendi. En yüksek eşleşme Ahmet Yılmaz ile sağlanmıştır.',
   },
@@ -168,8 +177,14 @@ const DEMO_REPORTS = [
     position: 'Frontend Developer', created_at: '2026-07-19T14:00:00Z',
     filter_criteria: { skills: ['react', 'typescript'], languages: [{ language: 'ingilizce', level: 'b1' }] },
     matched_candidates: [
-      { candidate_name: 'Ayşe Çelik', score: 92 },
-      { candidate_name: 'Can Öztürk', score: 80 },
+      {
+        candidate_id: '2', candidate_name: 'Ayşe Çelik', score: 92,
+        radar_scores: { technical_skills: 9.5, project_experience: 8.5, experience_level: 7.5, language_proficiency: 10, communication_clarity: 8.5, technical_depth: 8 },
+      },
+      {
+        candidate_id: '5', candidate_name: 'Can Öztürk', score: 80,
+        radar_scores: { technical_skills: 8.5, project_experience: 8, experience_level: 7.5, language_proficiency: 8, communication_clarity: 8, technical_depth: 7.5 },
+      },
     ],
     ai_summary: 'Frontend Developer için Ayşe Çelik en güçlü aday olarak öne çıkmaktadır.',
   }
@@ -209,8 +224,16 @@ export const useStore = create((set, get) => ({
 
   // Reports
   reports: DEMO_REPORTS,
+  setReports: (reports) => set({ reports }),
   addReport: (report) => set((state) => ({
-    reports: [...state.reports, { ...report, id: String(state.reports.length + 1), created_at: new Date().toISOString() }]
+    reports: [...state.reports, {
+      ...report,
+      id: report.id || String(state.reports.length + 1),
+      created_at: report.created_at || new Date().toISOString(),
+    }]
+  })),
+  updateReport: (id, data) => set((state) => ({
+    reports: state.reports.map(report => report.id === id ? { ...report, ...data } : report)
   })),
   deleteReport: (id) => set((state) => ({ reports: state.reports.filter(r => r.id !== id) })),
 

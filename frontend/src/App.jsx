@@ -15,6 +15,7 @@ import SettingsPage from './pages/Settings';
 
 export default function App() {
   const setCandidates = useStore(state => state.setCandidates);
+  const setReports = useStore(state => state.setReports);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('ikai-color-mode') === 'dark');
 
   useEffect(() => {
@@ -22,7 +23,10 @@ export default function App() {
     api.getCandidates()
       .then(data => Array.isArray(data) && setCandidates(data))
       .catch(() => {});
-  }, [setCandidates]);
+    api.getReports()
+      .then(data => Array.isArray(data) && setReports(data))
+      .catch(() => {});
+  }, [setCandidates, setReports]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-dark', darkMode);

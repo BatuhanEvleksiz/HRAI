@@ -110,6 +110,7 @@ export const api = {
   getReports: () => request('/reports/'),
   getReport: (id) => request(`/reports/${id}`),
   saveReport: (data) => request('/reports/', { method: 'POST', body: JSON.stringify(data) }),
+  updateReport: (id, data) => request(`/reports/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteReport: (id) => request(`/reports/${id}`, { method: 'DELETE' }),
 
   // Chatbot

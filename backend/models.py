@@ -82,6 +82,10 @@ class ReportCreate(BaseModel):
     matched_candidates: List[Dict[str, Any]]
     ai_summary: Optional[str] = None
 
+class ReportUpdate(BaseModel):
+    matched_candidates: Optional[List[Dict[str, Any]]] = None
+    ai_summary: Optional[str] = None
+
 class ReportResponse(ReportCreate):
     id: str
     created_at: datetime
@@ -95,6 +99,7 @@ class ScoringWeights(BaseModel):
 
 class MatchRequest(BaseModel):
     position: str
+    required_experience_years: Optional[float] = None
     required_skills: List[str] = []
     required_languages: List[Dict[str, str]] = []
     required_university: Optional[str] = None

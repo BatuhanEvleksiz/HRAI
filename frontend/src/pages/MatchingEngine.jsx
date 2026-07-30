@@ -65,6 +65,7 @@ export default function MatchingEngine() {
 
   // Filter criteria
   const [position, setPosition] = useState('');
+  const [requiredExperienceYears, setRequiredExperienceYears] = useState('');
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
   const [selectedUniversities, setSelectedUniversities] = useState([]);
@@ -81,6 +82,7 @@ export default function MatchingEngine() {
   const [matchingMode, setMatchingMode] = useState(null);
   const [matchingError, setMatchingError] = useState('');
   const [expandedCard, setExpandedCard] = useState(null);
+  const [isSavingReport, setIsSavingReport] = useState(false);
 
   const addLanguage = () => {
     if (!selectedLanguages.find(l => l.language === langToAdd)) {
@@ -249,6 +251,7 @@ export default function MatchingEngine() {
     try {
       const data = await api.matchCandidates({
         position,
+        required_experience_years: requiredExperienceYears ? Number(requiredExperienceYears) : null,
         required_skills: selectedSkills,
         required_languages: selectedLanguages,
         required_universities: selectedUniversities,
@@ -269,16 +272,58 @@ export default function MatchingEngine() {
     return { text: 'text-danger-500', bg: 'bg-danger-50', border: 'border-danger-200', gradient: 'from-danger-500 to-danger-400' };
   };
 
-  const saveReport = () => {
+  const saveReport = async () => {
     if (!results) return;
-    addReport({
+    const toTen = (entry, active) => active && entry?.max > 0
+      ? Math.round((Number(entry.score || 0) / Number(entry.max)) * 100) / 10
+      : null;
+    const requiredYears = Number(requiredExperienceYears || 0);
+    const payload = {
       title: `${capitalize(position) || 'Genel'} Aday Raporu - ${new Date().toLocaleDateString('tr-TR')}`,
-      position: position,
-      filter_criteria: { skills: selectedSkills, languages: selectedLanguages, universities: selectedUniversities, projects: projectKeywords, llm_keywords: llmKeywords },
-      matched_candidates: results.map(r => ({ candidate_name: capitalize(r.full_name), score: r.totalScore, ai_comment: r.aiComment })),
+      position,
+      filter_criteria: {
+        skills: selectedSkills,
+        languages: selectedLanguages,
+        universities: selectedUniversities,
+        projects: projectKeywords,
+        llm_keywords: llmKeywords,
+        required_experience_years: requiredYears || null,
+      },
+      matched_candidates: results.map(candidate => ({
+        candidate_id: candidate.id,
+        candidate_name: capitalize(candidate.full_name),
+        score: candidate.totalScore,
+        ai_comment: candidate.aiComment,
+        breakdown: candidate.breakdown,
+        radar_scores: {
+          technical_skills: toTen(candidate.breakdown?.skill, selectedSkills.length > 0),
+          project_experience: toTen(candidate.breakdown?.project, projectKeywords.length > 0),
+          experience_level: requiredYears > 0
+            ? Math.min(10, Math.round((Number(candidate.experience_years || 0) / requiredYears) * 100) / 10)
+            : null,
+          language_proficiency: toTen(candidate.breakdown?.language, selectedLanguages.length > 0),
+          communication_clarity: null,
+          technical_depth: null,
+        },
+        radar_sources: {
+          technical_skills: 'cv',
+          project_experience: 'cv',
+          experience_level: 'cv',
+          language_proficiency: 'cv',
+        },
+      })),
       ai_summary: `${results.length} aday ${capitalize(position) || 'pozisyon'} için değerlendirildi. En yüksek eşleşme: ${capitalize(results[0]?.full_name)} (%${results[0]?.totalScore}).`,
-    });
-    alert('Rapor kaydedildi!');
+    };
+    setIsSavingReport(true);
+    try {
+      const saved = await api.saveReport(payload);
+      addReport(saved);
+      alert('Rapor veritabanına kaydedildi!');
+    } catch (error) {
+      alert(error.message || 'Rapor kaydedilemedi.');
+    } finally {
+      setIsSavingReport(false);
+    }
   };
 
   return (
@@ -294,15 +339,30 @@ export default function MatchingEngine() {
       {/* Filter Criteria */}
       <div className="antigravity-card-static p-6 space-y-5">
         {/* Position */}
-        <div>
-          <label className="text-sm font-semibold text-gray-700 mb-2 block">Pozisyon</label>
-          <input
-            type="text"
-            value={position}
-            onChange={(e) => setPosition(e.target.value)}
-            placeholder="Örn: Backend Developer"
-            className="antigravity-input"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-4">
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-2 block">Pozisyon</label>
+            <input
+              type="text"
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              placeholder="Örn: Backend Developer"
+              className="antigravity-input"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-2 block">İstenen deneyim (Radar)</label>
+            <input
+              type="number"
+              min="0"
+              max="50"
+              step="1"
+              value={requiredExperienceYears}
+              onChange={(e) => setRequiredExperienceYears(e.target.value)}
+              placeholder="Örn: 3"
+              className="antigravity-input"
+            />
+          </div>
         </div>
 
         {/* Skills */}
@@ -462,10 +522,11 @@ export default function MatchingEngine() {
             </h2>
             <button
               onClick={saveReport}
+              disabled={isSavingReport}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 transition-colors flex items-center gap-2 border border-primary-200"
             >
               <Save className="w-4 h-4" />
-              Raporu Kaydet
+              {isSavingReport ? 'Kaydediliyor...' : 'Raporu Kaydet'}
             </button>
           </div>
 
