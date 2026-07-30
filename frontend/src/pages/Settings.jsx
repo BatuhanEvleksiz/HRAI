@@ -63,7 +63,7 @@ export default function SettingsPage() {
           <Palette className="w-5 h-5 text-primary-500" />
           <div>
             <h2 className="text-lg font-bold text-gray-800">Tema Rengi</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Mavi ve pembe tema arasında geçiş yapın.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Mavi ve lila tema arasında geçiş yapın.</p>
           </div>
         </div>
         <div className="flex items-center gap-4 max-w-md">
@@ -72,13 +72,13 @@ export default function SettingsPage() {
             type="button"
             role="switch"
             aria-checked={theme === 'pink'}
-            aria-label="Mavi ve pembe tema arasında geçiş yap"
+            aria-label="Mavi ve lila tema arasında geçiş yap"
             onClick={() => setTheme(theme === 'pink' ? 'blue' : 'pink')}
             className="relative h-10 flex-1 min-w-[180px] rounded-full bg-gradient-to-r from-primary-500 via-accent-600 to-accent-500 p-1 shadow-inner"
           >
             <span className={`absolute top-1 h-8 w-8 rounded-full bg-white shadow-md transition-all duration-300 ${theme === 'pink' ? 'right-1' : 'left-1'}`} />
           </button>
-          <span className="text-sm font-semibold text-accent-600">Pembe</span>
+          <span className="text-sm font-semibold text-accent-600">Lila</span>
         </div>
       </div>
 
