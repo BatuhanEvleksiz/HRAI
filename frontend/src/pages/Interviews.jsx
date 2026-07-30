@@ -28,7 +28,9 @@ function InterviewCard({ interview, onToggleComplete, onDelete, onAddNote }) {
   const [noteText, setNoteText] = useState('');
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: isDragging
+      ? `${CSS.Transform.toString(transform) || ''} rotate(1deg) scale(1.02)`
+      : CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
@@ -45,11 +47,11 @@ function InterviewCard({ interview, onToggleComplete, onDelete, onAddNote }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="antigravity-card p-4 space-y-2 mb-3 cursor-default"
+      className={`antigravity-card kanban-card p-4 space-y-2 mb-3 ${isDragging ? 'kanban-card--dragging' : ''}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-2">
-          <button {...attributes} {...listeners} className="mt-1 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing">
+          <button {...attributes} {...listeners} className="mt-1 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing" aria-label="Mülakat kartını sürükle">
             <GripVertical className="w-4 h-4" />
           </button>
           <div>
