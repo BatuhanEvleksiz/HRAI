@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 
@@ -68,6 +68,8 @@ class InterviewAnalysisCreate(BaseModel):
     summary: str
     general_evaluation: str
     analysis_mode: str = "demo"
+    speaker_segments: List[Dict[str, Any]] = Field(default_factory=list)
+    communication_signals: Dict[str, Any] = Field(default_factory=dict)
 
 class InterviewAnalysisResponse(InterviewAnalysisCreate):
     id: str

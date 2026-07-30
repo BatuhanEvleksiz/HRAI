@@ -101,7 +101,18 @@ def save_interview_analysis(analysis: InterviewAnalysisCreate):
             if result.data:
                 return result.data[0]
         except Exception as exc:
-            raise HTTPException(status_code=500, detail=str(exc))
+            # Keep existing installations working until the optional metadata
+            # migration is run in Supabase.
+            legacy_payload = {
+                key: value for key, value in payload.items()
+                if key not in {"speaker_segments", "communication_signals"}
+            }
+            try:
+                result = supabase.table("interview_transcripts").insert(legacy_payload).execute()
+                if result.data:
+                    return result.data[0]
+            except Exception:
+                raise HTTPException(status_code=500, detail=str(exc))
     record = {**payload, "id": str(uuid.uuid4()), "created_at": datetime.now().isoformat()}
     demo_analyses.append(record)
     return record

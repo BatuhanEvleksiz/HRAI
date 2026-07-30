@@ -1,6 +1,7 @@
 import os
 import google.generativeai as genai
 import json
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -76,7 +77,31 @@ def demo_interview_analysis(transcript: str) -> dict:
     summary = f"Demo analiz: Görüşme {len(clean.split())} kelimelik bir döküm içeriyor. Öne çıkan başlıklar: {strength_text}."
     evaluation = "Adayın verdiği yanıtlar görüşme kaydı üzerinden incelenmelidir. "
     evaluation += "Yanıtlar somut örnekler ve deneyimlerle destekleniyorsa olumlu değerlendirme yapılabilir."
-    return {"summary": summary, "general_evaluation": evaluation}
+    return {
+        "summary": summary,
+        "general_evaluation": evaluation,
+        "speaker_segments": [],
+        "communication_signals": {},
+    }
+
+
+def speaker_segments_from_transcript(transcript: str) -> list[dict]:
+    """Convert explicit Gemini turn labels into safe UI-ready segments."""
+    segments = []
+    for raw_line in transcript.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        match = re.match(r"^\[(INTERVIEWER|CANDIDATE|SPEAKER\s*\d+)\]\s*:?[\s-]*(.*)$", line, re.I)
+        if match:
+            speaker = match.group(1).lower().replace(" ", "_")
+            text = match.group(2).strip()
+        else:
+            speaker = "unknown"
+            text = line
+        if text:
+            segments.append({"speaker": speaker, "text": text})
+    return segments
 
 def analyze_interview(transcript: str, mode: str = "demo") -> dict:
     if mode != "llm" or not api_key or "your_" in api_key:
@@ -85,10 +110,13 @@ def analyze_interview(transcript: str, mode: str = "demo") -> dict:
     try:
         model = genai.GenerativeModel(GEMINI_MODEL)
         prompt = (
-            "Aşağıdaki Türkçe iş mülakatı dökümünü değerlendir. Yalnızca JSON döndür: "
-            "summary ve general_evaluation alanları olsun. Özette konuşmanın ana başlıklarını, "
-            "değerlendirmede güçlü yönleri, riskleri ve takip edilmesi gereken noktaları yaz. "
-            "Aday hakkında kesin olmayan çıkarımlar yapma.\n\nDÖKÜM:\n" + transcript
+            "Analyze this Turkish job interview transcript. Return JSON only with these fields: "
+            "summary, general_evaluation, communication_signals, speaker_segments. "
+            "communication_signals must contain expression_clarity, technical_depth, response_specificity, "
+            "overall_signal as Low, Medium, or High, plus a short evidence list. Do not infer personality, "
+            "mental state, protected traits, or emotion from text. speaker_segments must preserve each turn "
+            "with speaker and text. Use transcript labels when present. Do not make unsupported claims.\n\n"
+            "TRANSCRIPT:\n" + transcript
         )
         result = model.generate_content(prompt)
         text = result.text
@@ -98,6 +126,8 @@ def analyze_interview(transcript: str, mode: str = "demo") -> dict:
         return {
             "summary": parsed.get("summary", ""),
             "general_evaluation": parsed.get("general_evaluation", ""),
+            "speaker_segments": parsed.get("speaker_segments") or speaker_segments_from_transcript(transcript),
+            "communication_signals": parsed.get("communication_signals") or {},
         }
     except Exception:
         return demo_interview_analysis(transcript)

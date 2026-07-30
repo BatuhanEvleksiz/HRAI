@@ -32,7 +32,7 @@ async def transcribe_audio(file_bytes: bytes, filename: str) -> str:
                 model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-3.5-flash"))
                 result = model.generate_content([
                     remote_file,
-                    "Bu Türkçe mülakat sesini yazıya dök. Konuşmacıları İK ve Aday olarak ayır, konuşmanın tamamını eksiksiz ver.",
+                    "Transcribe this Turkish job interview completely. Return plain text only. Start every turn with exactly [INTERVIEWER] or [CANDIDATE]. Do not summarize or omit words. If the speaker role is uncertain, use [SPEAKER 1] or [SPEAKER 2] instead of guessing.",
                 ])
                 transcript = result.text.strip()
                 if transcript:
@@ -71,7 +71,7 @@ def _transcribe_with_gemini(file_bytes: bytes, filename: str) -> str:
             model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-3.5-flash"))
             result = model.generate_content([
                 remote_file,
-                "Bu Türkçe mülakat sesini yazıya dök. Konuşmacıları İK ve Aday olarak ayır, konuşmanın tamamını eksiksiz ver.",
+                "Transcribe this Turkish job interview completely. Return plain text only. Start every turn with exactly [INTERVIEWER] or [CANDIDATE]. Do not summarize or omit words. If the speaker role is uncertain, use [SPEAKER 1] or [SPEAKER 2] instead of guessing.",
             ])
             transcript = result.text.strip()
             if transcript:

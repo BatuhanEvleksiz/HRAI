@@ -170,6 +170,20 @@ Aday: Son projemde Python ve FastAPI kullanarak bir e-ticaret servisi geliştird
 İK: Zorlandığınız bir problemi nasıl çözdünüz?
 Aday: Trafik arttığında performans sorunu yaşadık. Logları inceleyip önbellekleme ve veritabanı indeksleri ekledim. Sonuçta yanıt süresini düşürdük.`;
 
+function parseSpeakerSegments(text) {
+  return text.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+    const match = line.match(/^\[(INTERVIEWER|CANDIDATE|SPEAKER\s*\d+)\]\s*:?[\s-]*(.*)$/i);
+    if (!match) return { speaker: 'unknown', text: line };
+    return { speaker: match[1].toLowerCase().replace(/\s+/g, '_'), text: match[2].trim() };
+  }).filter(segment => segment.text);
+}
+
+function speakerLabel(speaker) {
+  if (speaker === 'interviewer') return 'İK';
+  if (speaker === 'candidate') return 'Aday';
+  return 'Konuşmacı';
+}
+
 function InterviewAssistant({ interviews, candidates }) {
   const [selectedInterviewId, setSelectedInterviewId] = useState('');
   const [interviewSearch, setInterviewSearch] = useState('');
@@ -177,6 +191,8 @@ function InterviewAssistant({ interviews, candidates }) {
   const [transcript, setTranscript] = useState('');
   const [summary, setSummary] = useState('');
   const [evaluation, setEvaluation] = useState('');
+  const [speakerSegments, setSpeakerSegments] = useState([]);
+  const [communicationSignals, setCommunicationSignals] = useState({});
   const [analysisMode, setAnalysisMode] = useState('demo');
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -247,6 +263,7 @@ function InterviewAssistant({ interviews, candidates }) {
     try {
       const result = await api.transcribeInterviewAudio(file, setUploadProgress);
       setTranscript(result.transcript || '');
+      setSpeakerSegments(parseSpeakerSegments(result.transcript || ''));
       setMessage('Ses metne dönüştürüldü. Artık analiz modunu seçebilirsiniz.');
     } catch (error) {
       setUploadProgress(0);
@@ -294,6 +311,8 @@ function InterviewAssistant({ interviews, candidates }) {
       setSummary(result.summary || '');
       setEvaluation(result.general_evaluation || '');
       setTranscript(result.transcript || source);
+      setSpeakerSegments(result.speaker_segments?.length ? result.speaker_segments : parseSpeakerSegments(result.transcript || source));
+      setCommunicationSignals(result.communication_signals || {});
       setMessage(result.warning || `${mode === 'llm' ? 'LLM' : 'Demo'} analizi hazır.`);
     } catch (error) {
       setMessage(error.message || 'Analiz yapılamadı.');
@@ -316,6 +335,8 @@ function InterviewAssistant({ interviews, candidates }) {
         summary,
         general_evaluation: evaluation,
         analysis_mode: analysisMode,
+        speaker_segments: speakerSegments,
+        communication_signals: communicationSignals,
       });
       setMessage('Mülakat kaydı adaya bağlandı ve kaydedildi.');
     } catch (error) {
@@ -336,13 +357,13 @@ function InterviewAssistant({ interviews, candidates }) {
             </div>
             <p className="text-sm text-gray-500 mt-1">Konuşmayı metne dönüştürün, yalnızca istediğiniz analiz için LLM kullanın.</p>
           </div>
-          <div className="min-w-[240px] relative">
+          <div className="min-w-[240px] relative z-40">
             <label className="text-xs font-semibold text-gray-600 mb-1 block">Randevulu mülakat</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input value={interviewSearch} onFocus={() => setIsInterviewPickerOpen(true)} onChange={event => { setInterviewSearch(event.target.value); setIsInterviewPickerOpen(true); }} placeholder="İsim ara ve mülakat seç..." className="antigravity-select pl-10" aria-label="Mülakat adayı ara" />
             </div>
-            {isInterviewPickerOpen && <div className="absolute left-0 right-0 top-[62px] z-30 max-h-64 overflow-y-auto rounded-xl border border-surface-200 bg-white shadow-xl">
+            {isInterviewPickerOpen && <div className="absolute left-0 right-0 top-[62px] z-[60] max-h-64 overflow-y-auto rounded-xl border border-surface-200 bg-white shadow-xl">
               {matchingInterviews.length ? matchingInterviews.map(item => <button key={item.id} type="button" onClick={() => selectInterview(item)} className={`w-full px-3 py-2.5 text-left hover:bg-primary-50 ${item.id === selectedInterviewId ? 'bg-primary-50' : ''}`}><span className="block text-sm font-semibold text-gray-800">{capitalize(item.candidate_name)}</span><span className="block text-xs text-gray-500">{capitalize(item.position)} · {item.interview_date} {item.interview_time}</span></button>) : <p className="px-3 py-4 text-xs text-gray-400">Eşleşen mülakat bulunamadı.</p>}
             </div>}
             {false && <select value={selectedInterviewId} onChange={e => setSelectedInterviewId(e.target.value)} className="antigravity-select">
@@ -391,6 +412,13 @@ function InterviewAssistant({ interviews, candidates }) {
           <span className="text-xs text-gray-400">Ses dosyası saklanmaz</span>
         </div>
         <textarea value={transcript} onChange={e => setTranscript(e.target.value)} className="antigravity-input min-h-[180px] resize-y" placeholder="Canlı kayıt veya ses dosyası sonrası konuşma burada görünür..." />
+        {speakerSegments.length > 0 && <div className="space-y-2 rounded-xl border border-surface-200 bg-surface-50/70 p-3">
+          <div className="text-xs font-semibold text-gray-500">Konuşmacı ayrıştırması</div>
+          {speakerSegments.map((segment, index) => <div key={`${segment.speaker}-${index}`} className="flex items-start gap-2 text-sm text-gray-700">
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${segment.speaker === 'interviewer' ? 'bg-primary-100 text-primary-700' : segment.speaker === 'candidate' ? 'bg-accent-100 text-accent-700' : 'bg-surface-200 text-gray-600'}`}>{speakerLabel(segment.speaker)}</span>
+            <span className="leading-relaxed">{segment.text}</span>
+          </div>)}
+        </div>}
         <div className="flex flex-wrap gap-3">
           <button type="button" onClick={() => analyze('demo')} disabled={isProcessing || isUploading} className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> Demo analizi</button>
           <button type="button" onClick={() => analyze('llm')} disabled={isProcessing || isUploading} className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> LLM ile analiz et</button>
@@ -401,6 +429,20 @@ function InterviewAssistant({ interviews, candidates }) {
       {(summary || evaluation) && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="antigravity-card-static p-5"><h3 className="font-bold text-gray-900 mb-2">Mülakat Özeti</h3><p className="text-sm text-gray-600 leading-relaxed">{summary}</p></div>
         <div className="antigravity-card-static p-5"><h3 className="font-bold text-gray-900 mb-2">Genel Değerlendirme</h3><p className="text-sm text-gray-600 leading-relaxed">{evaluation}</p></div>
+      </div>}
+
+      {analysisMode === 'llm' && Object.keys(communicationSignals).length > 0 && <div className="antigravity-card-static p-5">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h3 className="font-bold text-gray-900">İletişim sinyalleri</h3>
+          <span className="text-[11px] text-gray-400">LLM tahmini · tek başına karar kriteri değildir</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[['expression_clarity', 'İfade netliği'], ['technical_depth', 'Teknik derinlik'], ['response_specificity', 'Yanıtların somutluğu'], ['overall_signal', 'Genel sinyal']].map(([key, label]) => <div key={key} className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2">
+            <div className="text-[11px] text-gray-500">{label}</div>
+            <div className="mt-1 text-sm font-semibold text-primary-700">{communicationSignals[key] || 'Belirsiz'}</div>
+          </div>)}
+        </div>
+        {Array.isArray(communicationSignals.evidence) && communicationSignals.evidence.length > 0 && <p className="mt-3 text-xs text-gray-500">Kanıt: {communicationSignals.evidence.join(' ')}</p>}
       </div>}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
