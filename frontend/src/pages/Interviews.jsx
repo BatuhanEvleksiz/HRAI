@@ -348,7 +348,7 @@ function InterviewAssistant({ interviews, candidates }) {
 
   return (
     <div className="space-y-5 animate-slide-up">
-      <div className="antigravity-card-static p-5">
+      <div className="antigravity-card-static relative z-50 p-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
