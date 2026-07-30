@@ -15,6 +15,7 @@ class CandidateCreate(BaseModel):
     ai_summary: Optional[str] = None
     raw_cv_text: Optional[str] = None
     original_filename: Optional[str] = None
+    radar_scores: Dict[str, Any] = Field(default_factory=dict)
 
 class CandidateUpdate(BaseModel):
     full_name: Optional[str] = None
@@ -27,6 +28,7 @@ class CandidateUpdate(BaseModel):
     languages: Optional[List[Dict[str, str]]] = None
     projects: Optional[List[Dict[str, Any]]] = None
     ai_summary: Optional[str] = None
+    radar_scores: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
 
 class CandidateResponse(CandidateCreate):

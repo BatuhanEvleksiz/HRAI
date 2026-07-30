@@ -10,6 +10,34 @@ from datetime import datetime
 
 router = APIRouter()
 
+def build_candidate_radar(candidate: dict) -> dict:
+    """Build a position-independent CV profile radar; interview signals stay empty."""
+    skills = candidate.get("skills") or []
+    projects = candidate.get("projects") or []
+    years = max(0, float(candidate.get("experience_years") or 0))
+    language_levels = {"a1": 1, "a2": 2, "b1": 3, "b2": 4, "c1": 5, "c2": 6}
+    language_values = [
+        language_levels.get(str(language.get("level", "")).lower(), 0)
+        for language in (candidate.get("languages") or [])
+    ]
+
+    technical_skills = min(10, round(len(skills) * 1.1, 1))
+    project_experience = min(10, round(len(projects) * 2.5 + min(years, 5) * 0.6, 1))
+    experience_level = min(10, round(years * 1.7, 1))
+    language_proficiency = round(
+        (sum(language_values) / len(language_values) / 6) * 10, 1
+    ) if language_values else None
+    technical_depth = round((technical_skills + project_experience) / 2, 1)
+
+    return {
+        "technical_skills": technical_skills,
+        "project_experience": project_experience,
+        "experience_level": experience_level,
+        "language_proficiency": language_proficiency,
+        "communication_clarity": None,
+        "technical_depth": technical_depth,
+    }
+
 def fallback_cv_analysis(text: str, filename: str | None) -> dict:
     """Return a useful local result when the optional Gemini call times out."""
     email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", text)
@@ -106,6 +134,8 @@ async def upload_cv(file: UploadFile = File(...)):
 @router.post("/save")
 def save_candidate(candidate: CandidateCreate):
     c_dict = candidate.dict()
+    if not c_dict.get("radar_scores"):
+        c_dict["radar_scores"] = build_candidate_radar(c_dict)
     # Keep JSONB fields in the shape expected by the Supabase trigger/schema.
     for project in c_dict.get("projects") or []:
         technologies = project.get("technologies", [])

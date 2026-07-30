@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { api } from '../api/api';
+import CandidateRadarChart from '../components/CandidateRadarChart';
 import { Search, Trash2, Eye, Edit3, X, Save, FolderOpen, CheckCircle, XCircle, Clock, Code, Globe, Briefcase, GraduationCap, MessageSquareText, Loader2 } from 'lucide-react';
 
 function capitalize(str) {
@@ -203,7 +204,7 @@ export default function SavedCVs() {
       {/* View Modal */}
       {viewingCV && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => setViewingCV(null)}>
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-8 animate-slide-up" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto p-8 animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold gradient-text">{capitalize(viewingCV.full_name)}</h2>
@@ -218,6 +219,12 @@ export default function SavedCVs() {
               <div className="text-sm text-gray-500 space-y-1">
                 <p>📧 {viewingCV.email} &nbsp;&nbsp; 📱 {viewingCV.phone}</p>
                 <p>📅 Deneyim: {viewingCV.experience_years} yıl</p>
+              </div>
+
+              <div className="border-y border-surface-100 py-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-1">Aday Yetkinlik Radarı</h4>
+                <p className="text-xs text-gray-400">CV profili ve varsa mülakat analizinden oluşturulur.</p>
+                <CandidateRadarChart candidate={viewingCV} />
               </div>
 
               <div>

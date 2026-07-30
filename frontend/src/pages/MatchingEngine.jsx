@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { api } from '../api/api';
 import { Target, Search, Sparkles, X, ChevronDown, ChevronUp, Save, GraduationCap, Code, Globe, FolderGit2, Brain, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { WEIGHT_CONFIG } from '../constants/scoringWeights';
 
 function capitalize(str) {
   if (!str) return '';
@@ -28,6 +29,65 @@ const AVAILABLE_UNIVERSITIES = [
   'muğla sıtkı koçman üniversitesi', 'bilkent üniversitesi', 'koç üniversitesi',
   'sabancı üniversitesi', 'ege üniversitesi'
 ];
+
+const WEIGHT_STYLE = Object.fromEntries(WEIGHT_CONFIG.map(item => [item.key, item]));
+
+function redistributeWeights(weights, changedKey, nextValue) {
+  const keys = Object.keys(weights);
+  const clamped = Math.max(0, Math.min(100, Number(nextValue)));
+  const otherKeys = keys.filter(key => key !== changedKey);
+  const remaining = 100 - clamped;
+  const otherTotal = otherKeys.reduce((sum, key) => sum + Number(weights[key] || 0), 0);
+  const next = { ...weights, [changedKey]: clamped };
+
+  if (otherTotal === 0) {
+    otherKeys.forEach((key, index) => {
+      next[key] = index === 0 ? remaining : 0;
+    });
+    return next;
+  }
+
+  const shares = otherKeys.map(key => {
+    const raw = (Number(weights[key] || 0) / otherTotal) * remaining;
+    return { key, value: Math.floor(raw), fraction: raw - Math.floor(raw) };
+  });
+  let difference = remaining - shares.reduce((sum, share) => sum + share.value, 0);
+  shares.sort((a, b) => b.fraction - a.fraction);
+  shares.forEach(share => {
+    if (difference > 0) {
+      share.value += 1;
+      difference -= 1;
+    }
+    next[share.key] = share.value;
+  });
+  return next;
+}
+
+function InlineWeightSlider({ weightKey, weights, onChange }) {
+  const config = WEIGHT_STYLE[weightKey];
+  const value = Number(weights[weightKey] || 0);
+  return (
+    <div className="ml-auto flex min-w-[190px] items-center gap-2" aria-label={`${config.label} ağırlığı`}>
+      <div className="relative h-2 flex-1 rounded-full" style={{ backgroundColor: config.soft }}>
+        <div className="h-full rounded-full transition-all duration-200" style={{ width: `${value}%`, backgroundColor: config.color }} />
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value={value}
+          onChange={event => onChange(weightKey, event.target.value)}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+        <span
+          className="pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 bg-white shadow-sm transition-all duration-200"
+          style={{ left: `calc(${value}% - 7px)`, borderColor: config.color }}
+        />
+      </div>
+      <span className="w-10 text-right text-xs font-bold" style={{ color: config.color }}>%{value}</span>
+    </div>
+  );
+}
 
 function TagInput({ tags, setTags, placeholder }) {
   const [input, setInput] = useState('');
@@ -61,7 +121,7 @@ function TagInput({ tags, setTags, placeholder }) {
 }
 
 export default function MatchingEngine() {
-  const { candidates, weights, addReport } = useStore();
+  const { candidates, weights, setWeights, addReport, updateCandidate } = useStore();
 
   // Filter criteria
   const [position, setPosition] = useState('');
@@ -100,6 +160,10 @@ export default function MatchingEngine() {
     } else {
       setSelectedSkills([...selectedSkills, skill]);
     }
+  };
+
+  const handleInlineWeightChange = (key, value) => {
+    setWeights(redistributeWeights(weights, key, value));
   };
 
   const runDemoMatching = useCallback(() => {
@@ -249,6 +313,7 @@ export default function MatchingEngine() {
     setMatchingMode('api');
     setMatchingError('');
     try {
+      await api.updateWeights(weights);
       const data = await api.matchCandidates({
         position,
         required_experience_years: requiredExperienceYears ? Number(requiredExperienceYears) : null,
@@ -258,7 +323,13 @@ export default function MatchingEngine() {
         required_projects: projectKeywords,
         llm_summary_keywords: llmKeywords,
       });
-      setResults(normalizeApiResults(data));
+      const normalized = normalizeApiResults(data);
+      setResults(normalized);
+      normalized.forEach(candidate => {
+        if (candidate.id && candidate.radar_scores) {
+          updateCandidate(candidate.id, { radar_scores: candidate.radar_scores });
+        }
+      });
     } catch {
       setMatchingError('API eşleştirmesi başarısız oldu. Backend bağlantısını kontrol edin.');
     } finally {
@@ -367,11 +438,14 @@ export default function MatchingEngine() {
 
         {/* Skills */}
         <div>
-          <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-            <Code className="w-4 h-4 text-primary-500" />
-            Beceri/Yetkinlikler
-            <span className="text-xs text-gray-400 font-normal">({selectedSkills.length} seçili — Ağırlık: %{weights.skill_weight})</span>
-          </label>
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Code className="w-4 h-4 text-primary-500" />
+              Beceri/Yetkinlikler
+              <span className="text-xs text-gray-400 font-normal">({selectedSkills.length} seçili)</span>
+            </label>
+            <InlineWeightSlider weightKey="skill_weight" weights={weights} onChange={handleInlineWeightChange} />
+          </div>
           <div className="flex flex-wrap gap-2 p-3 bg-surface-50 rounded-xl border border-surface-200 max-h-[180px] overflow-y-auto">
             {AVAILABLE_SKILLS.map(skill => (
               <button
@@ -391,11 +465,13 @@ export default function MatchingEngine() {
 
         {/* Languages */}
         <div>
-          <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-            <Globe className="w-4 h-4 text-language-500" />
-            Dil Seviyesi
-            <span className="text-xs text-gray-400 font-normal">(Ağırlık: %{weights.language_weight})</span>
-          </label>
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-language-500" />
+              Dil Seviyesi
+            </label>
+            <InlineWeightSlider weightKey="language_weight" weights={weights} onChange={handleInlineWeightChange} />
+          </div>
           <div className="flex flex-wrap gap-2 mb-3">
             {selectedLanguages.map(lang => (
               <span key={lang.language} className="pill pill-purple flex items-center gap-1">
@@ -419,11 +495,13 @@ export default function MatchingEngine() {
 
         {/* University */}
         <div>
-          <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-            <GraduationCap className="w-4 h-4 text-warning-500" />
-            Üniversite
-            <span className="text-xs text-gray-400 font-normal">(Ağırlık: %{weights.university_weight})</span>
-          </label>
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-warning-500" />
+              Üniversite
+            </label>
+            <InlineWeightSlider weightKey="university_weight" weights={weights} onChange={handleInlineWeightChange} />
+          </div>
           <div className="flex flex-wrap gap-2 p-3 bg-surface-50 rounded-xl border border-surface-200">
             {AVAILABLE_UNIVERSITIES.map(university => {
               const selected = selectedUniversities.includes(university);
@@ -450,21 +528,27 @@ export default function MatchingEngine() {
 
         {/* Projects */}
         <div>
-          <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-            <FolderGit2 className="w-4 h-4 text-success-500" />
-            Proje Anahtar Kelimeleri
-            <span className="text-xs text-gray-400 font-normal">(Yazıp Enter'a basın — Ağırlık: %{weights.project_weight})</span>
-          </label>
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <FolderGit2 className="w-4 h-4 text-success-500" />
+              Proje Anahtar Kelimeleri
+              <span className="text-xs text-gray-400 font-normal">(Yazıp Enter'a basın)</span>
+            </label>
+            <InlineWeightSlider weightKey="project_weight" weights={weights} onChange={handleInlineWeightChange} />
+          </div>
           <TagInput tags={projectKeywords} setTags={setProjectKeywords} placeholder="Örn: cloud, e-ticaret, microservices..." />
         </div>
 
         {/* LLM Keywords */}
         <div>
-          <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-            <Brain className="w-4 h-4 text-primary-500" />
-            İK LLM Semantik Özet Anahtar Kelimeleri
-            <span className="text-xs text-gray-400 font-normal">(Yazıp Enter'a basın — Ağırlık: %{weights.llm_summary_weight})</span>
-          </label>
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Brain className="w-4 h-4 text-primary-500" />
+              İK LLM Semantik Özet Anahtar Kelimeleri
+              <span className="text-xs text-gray-400 font-normal">(Yazıp Enter'a basın)</span>
+            </label>
+            <InlineWeightSlider weightKey="llm_summary_weight" weights={weights} onChange={handleInlineWeightChange} />
+          </div>
           <TagInput tags={llmKeywords} setTags={setLlmKeywords} placeholder="Örn: backend, microservices, deneyimli..." />
         </div>
 

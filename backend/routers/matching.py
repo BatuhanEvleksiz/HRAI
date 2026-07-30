@@ -2,10 +2,36 @@ from fastapi import APIRouter
 from models import MatchRequest, ScoringWeights
 from services.scoring_engine import calculate_scores
 from database import get_supabase
-from routers.cv import demo_candidate
+from routers.cv import build_candidate_radar, demo_candidate
 import copy
 
 router = APIRouter()
+
+def _normalized_score(value, maximum):
+    if not maximum:
+        return None
+    return round(max(0, min(10, (float(value or 0) / float(maximum)) * 10)), 1)
+
+def _persist_match_radars(supabase, results, requirements, weights):
+    required_years = float(requirements.get("required_experience_years") or 0)
+    for item in results:
+        candidate = item.get("candidate") or {}
+        breakdown = item.get("score_breakdown") or {}
+        radar = {**build_candidate_radar(candidate), **(candidate.get("radar_scores") or {})}
+        if requirements.get("required_skills"):
+            radar["technical_skills"] = _normalized_score(breakdown.get("skills"), weights.get("skill_weight"))
+        if requirements.get("required_projects"):
+            radar["project_experience"] = _normalized_score(breakdown.get("projects"), weights.get("project_weight"))
+        if requirements.get("required_languages"):
+            radar["language_proficiency"] = _normalized_score(breakdown.get("languages"), weights.get("language_weight"))
+        if required_years > 0:
+            radar["experience_level"] = round(min(10, (float(candidate.get("experience_years") or 0) / required_years) * 10), 1)
+        radar["matched_position"] = requirements.get("position") or ""
+        candidate["radar_scores"] = radar
+        try:
+            supabase.table("candidates").update({"radar_scores": radar}).eq("id", candidate.get("id")).execute()
+        except Exception:
+            continue
 
 @router.post("/match")
 def match_candidates(req: MatchRequest):
@@ -36,5 +62,8 @@ def match_candidates(req: MatchRequest):
         except Exception:
             pass
             
-    results = calculate_scores(candidates, req.dict(), weights_dict)
+    requirements = req.dict()
+    results = calculate_scores(candidates, requirements, weights_dict)
+    if supabase:
+        _persist_match_radars(supabase, results, requirements, weights_dict)
     return results

@@ -35,6 +35,33 @@ def _is_uuid(value: str | None) -> bool:
     except (ValueError, TypeError, AttributeError):
         return False
 
+def _signal_score(value):
+    if isinstance(value, (int, float)):
+        return max(0, min(10, float(value)))
+    levels = {
+        "low": 3, "düşük": 3,
+        "medium": 6, "orta": 6,
+        "high": 9, "yüksek": 9,
+    }
+    return levels.get(str(value or "").strip().lower())
+
+def _sync_candidate_radar(supabase, candidate_id: str, signals: dict):
+    try:
+        communication = _signal_score(signals.get("expression_clarity"))
+        technical_depth = _signal_score(signals.get("technical_depth"))
+        if communication is None and technical_depth is None:
+            return
+        current = supabase.table("candidates").select("radar_scores").eq("id", candidate_id).execute()
+        radar = (current.data[0].get("radar_scores") or {}) if current.data else {}
+        if communication is not None:
+            radar["communication_clarity"] = communication
+        if technical_depth is not None:
+            radar["technical_depth"] = technical_depth
+        supabase.table("candidates").update({"radar_scores": radar}).eq("id", candidate_id).execute()
+    except Exception:
+        # Interview records remain valid even before the radar migration is run.
+        return
+
 @router.post("/assistant/analyze")
 async def analyze_interview_transcript(request: InterviewAnalysisRequest):
     transcript = request.transcript.strip()
@@ -99,6 +126,7 @@ def save_interview_analysis(analysis: InterviewAnalysisCreate):
         try:
             result = supabase.table("interview_transcripts").insert(payload).execute()
             if result.data:
+                _sync_candidate_radar(supabase, analysis.candidate_id, analysis.communication_signals)
                 return result.data[0]
         except Exception as exc:
             # Keep existing installations working until the optional metadata
@@ -110,6 +138,7 @@ def save_interview_analysis(analysis: InterviewAnalysisCreate):
             try:
                 result = supabase.table("interview_transcripts").insert(legacy_payload).execute()
                 if result.data:
+                    _sync_candidate_radar(supabase, analysis.candidate_id, analysis.communication_signals)
                     return result.data[0]
             except Exception:
                 raise HTTPException(status_code=500, detail=str(exc))

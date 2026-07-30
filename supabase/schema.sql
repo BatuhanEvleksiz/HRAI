@@ -66,6 +66,9 @@ CREATE TABLE candidates (
     
     -- Orijinal PDF dosya adı
     original_filename VARCHAR(500),
+
+    -- Aday kartında gösterilen 6 eksenli kalıcı radar skorları
+    radar_scores JSONB NOT NULL DEFAULT '{}'::jsonb,
     
     -- Durum: pending (onay bekleyen), approved (onaylanan), rejected (reddedilen)
     status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),

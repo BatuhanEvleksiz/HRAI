@@ -1,27 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
+import { api } from '../api/api';
 import { Settings, Save, RotateCcw, CheckCircle, AlertCircle, Key, Palette } from 'lucide-react';
-
-const WEIGHT_CONFIG = [
-  { key: 'skill_weight', label: 'Beceri/Yetkinlik', icon: '🔧', gradient: 'from-primary-500 to-primary-400' },
-  { key: 'project_weight', label: 'Proje/Deneyim', icon: '📁', gradient: 'from-yellow-500 to-orange-500' },
-  { key: 'llm_summary_weight', label: 'İK LLM Semantik Özeti', icon: '🍬', gradient: 'from-primary-500 to-accent-500' },
-  { key: 'university_weight', label: 'Üniversite', icon: '🎓', gradient: 'from-blue-400 to-cyan-500' },
-  { key: 'language_weight', label: 'Dil Seviyesi', icon: '🌐', gradient: 'from-green-500 to-teal-500' },
-];
-
-const DEFAULTS = { skill_weight: 40, project_weight: 20, llm_summary_weight: 20, university_weight: 10, language_weight: 10 };
+import { DEFAULT_WEIGHTS, WEIGHT_CONFIG } from '../constants/scoringWeights';
 
 export default function SettingsPage() {
   const { weights, setWeights } = useStore();
   const [theme, setTheme] = useState(() => localStorage.getItem('ikai-theme') || 'blue');
   const [localWeights, setLocalWeights] = useState({ ...weights });
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-pink', theme === 'pink');
     localStorage.setItem('ikai-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    setLocalWeights({ ...weights });
+  }, [weights]);
 
   const total = Object.values(localWeights).reduce((a, b) => a + b, 0);
   const isValid = total === 100;
@@ -37,16 +34,22 @@ export default function SettingsPage() {
     setSaved(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (isValid) {
-      setWeights(localWeights);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setSaveError('');
+      try {
+        const persisted = await api.updateWeights(localWeights);
+        setWeights(persisted);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } catch (error) {
+        setSaveError(error.message || 'Ağırlıklar kaydedilemedi.');
+      }
     }
   };
 
   const handleReset = () => {
-    setLocalWeights({ ...DEFAULTS });
+    setLocalWeights({ ...DEFAULT_WEIGHTS });
     setSaved(false);
   };
 
@@ -113,23 +116,24 @@ export default function SettingsPage() {
             Toplam ağırlık %100 olmalıdır. Şu an: %{total} ({total > 100 ? `${total - 100} fazla` : `${100 - total} eksik`})
           </div>
         )}
+        {saveError && <p className="text-sm text-danger-600">{saveError}</p>}
 
         {/* Weight Sliders */}
         <div className="space-y-6">
-          {WEIGHT_CONFIG.map(({ key, label, icon, gradient }) => (
+          {WEIGHT_CONFIG.map(({ key, label, color, soft }) => (
             <div key={key}>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <span>{icon}</span> {label}
+                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} /> {label}
                 </label>
-                <span className="text-sm font-bold text-gray-900">{localWeights[key]}%</span>
+                <span className="text-sm font-bold" style={{ color }}>{localWeights[key]}%</span>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex-1 relative">
-                  <div className="w-full h-2 bg-surface-200 rounded-full overflow-hidden">
+                  <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: soft }}>
                     <div
-                      className={`h-full rounded-full bg-gradient-to-r ${gradient} transition-all duration-300`}
-                      style={{ width: `${localWeights[key]}%` }}
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{ width: `${localWeights[key]}%`, backgroundColor: color }}
                     />
                   </div>
                   <input
@@ -143,8 +147,8 @@ export default function SettingsPage() {
                   />
                   {/* Slider thumb visual indicator */}
                   <div
-                    className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-primary-500 shadow-md transition-all duration-300 pointer-events-none`}
-                    style={{ left: `calc(${localWeights[key]}% - 8px)` }}
+                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 shadow-md transition-all duration-300 pointer-events-none"
+                    style={{ left: `calc(${localWeights[key]}% - 8px)`, borderColor: color }}
                   />
                 </div>
                 <input
