@@ -52,7 +52,9 @@ function DonutSlice({ cx, cy, midAngle, innerRadius, outerRadius, startAngle, en
   const angle = -midAngle * (Math.PI / 180);
   const offset = separated ? 7 : 0;
   return (
-    <Sector cx={cx + Math.cos(angle) * offset} cy={cy + Math.sin(angle) * offset} innerRadius={innerRadius} outerRadius={outerRadius + (separated ? 4 : 0)} startAngle={startAngle} endAngle={endAngle} fill={fill} stroke="rgba(255,255,255,0.95)" strokeWidth={2} />
+    <g style={{ transition: 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)' }} transform={`translate(${Math.cos(angle) * offset}, ${Math.sin(angle) * offset})`}>
+      <Sector cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius} startAngle={startAngle} endAngle={endAngle} fill={fill} stroke="rgba(255,255,255,0.95)" strokeWidth={2} />
+    </g>
   );
 }
 

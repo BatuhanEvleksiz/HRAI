@@ -115,7 +115,7 @@ body {
   }
 
   .antigravity-card:hover {
-    @apply shadow-antigravity-hover -translate-y-1;
+    @apply shadow-antigravity-hover -translate-y-0.5;
   }
 
   .antigravity-card-static {
@@ -127,9 +127,25 @@ body {
     @apply px-6 py-2.5 rounded-xl font-semibold text-white
            bg-primary-500 hover:bg-primary-600
            shadow-lg shadow-primary-500/25
-           transition-all duration-200 ease-out
+           transition-all duration-300 ease-out
            hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary-500/30
            active:translate-y-0 active:shadow-md;
+  }
+
+  /* Keep small controls responsive without making hover feel abrupt. */
+  button:not(:disabled) {
+    transition-property: transform, box-shadow, background-color, border-color, color;
+    transition-duration: 280ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  button:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+
+  button:not(:disabled):active {
+    transform: translateY(0);
+    transition-duration: 120ms;
   }
 
   .antigravity-input {
