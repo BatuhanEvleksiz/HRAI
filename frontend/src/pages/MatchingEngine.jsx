@@ -563,7 +563,7 @@ export default function MatchingEngine() {
             className="antigravity-button flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Target className="w-4 h-4" />
-            {isSearching && matchingMode === 'api' ? 'API Eşleştiriyor...' : 'API ile Eşleştirmeyi Başlat'}
+            {isSearching && matchingMode === 'api' ? 'HRAI eşleştiriyor...' : 'HRAI EŞLEŞTİRME'}
           </button>
           <button
             onClick={runDemoMatching}

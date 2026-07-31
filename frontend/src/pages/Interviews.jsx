@@ -402,7 +402,7 @@ function InterviewAssistant({ interviews, candidates }) {
             <div className="h-2 rounded-full bg-surface-100 overflow-hidden"><div className="h-full rounded-full bg-primary-500 transition-all duration-200" style={{ width: `${uploadProgress}%` }} /></div>
           </div>}
           {!isUploading && uploadedFileName && uploadProgress === 100 && <p className="text-xs text-success-600 mt-2">Yükleme tamamlandı</p>}
-          {!isUploading && uploadedFileName && !transcript.trim() && <p className="text-xs text-warning-600 mt-2">Ses dökümü henüz oluşmadı. LLM ile analiz et düğmesi ses dosyasını doğrudan işleyecek.</p>}
+          {!isUploading && uploadedFileName && !transcript.trim() && <p className="text-xs text-warning-600 mt-2">Ses dökümü henüz oluşmadı. HRAI ile analiz et düğmesi ses dosyasını doğrudan işleyecek.</p>}
         </div>
       </div>
 
@@ -421,7 +421,7 @@ function InterviewAssistant({ interviews, candidates }) {
         </div>}
         <div className="flex flex-wrap gap-3">
           <button type="button" onClick={() => analyze('demo')} disabled={isProcessing || isUploading} className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> Demo analizi</button>
-          <button type="button" onClick={() => analyze('llm')} disabled={isProcessing || isUploading} className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> LLM ile analiz et</button>
+          <button type="button" onClick={() => analyze('llm')} disabled={isProcessing || isUploading} className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary-300 text-primary-600 hover:bg-primary-50 disabled:opacity-50 flex items-center gap-2"><Sparkles className="w-4 h-4" /> HRAI ile analiz et</button>
           {isProcessing && <Loader2 className="w-5 h-5 text-primary-500 animate-spin self-center" />}
         </div>
       </div>

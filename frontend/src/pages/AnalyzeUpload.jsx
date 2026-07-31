@@ -170,7 +170,7 @@ export default function AnalyzeUpload() {
                 className="antigravity-button flex items-center gap-2 disabled:opacity-50"
               >
                 <Sparkles className="w-4 h-4" />
-                {isAnalyzing ? 'API analiz ediyor...' : 'PDF\'yi API ile analiz et'}
+                {isAnalyzing ? 'HRAI analiz ediyor...' : 'HRAI PDF analiz'}
               </button>
               <button
                 onClick={handleDemoAnalyze}
