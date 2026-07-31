@@ -220,7 +220,7 @@ body {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border: 1px solid rgba(89, 150, 255, 0.42) !important;
   color: #ffffff !important;
   background: transparent !important;
   box-shadow: 0 8px 20px rgba(27, 78, 245, 0.24);
@@ -301,11 +301,12 @@ body {
 
 :root.theme-dark .hrai-animated-button,
 :root.theme-dark .antigravity-button.hrai-animated-button {
-  --hrai-glow-a: #f8f9fa;
-  --hrai-glow-b: #adb5bd;
-  --hrai-glow-c: #6c757d;
-  --hrai-glow-d: #f8f9fa;
-  --hrai-glow-e: #ced4da;
+  --hrai-glow-a: #23d5ff;
+  --hrai-glow-b: #3874ff;
+  --hrai-glow-c: #8e94f2;
+  --hrai-glow-d: #b783ff;
+  --hrai-glow-e: #35f2c2;
+  border-color: rgba(89, 150, 255, 0.42) !important;
   color: #f8f9fa !important;
   background: transparent !important;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
