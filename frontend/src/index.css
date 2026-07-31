@@ -222,7 +222,7 @@ body {
   overflow: hidden;
   border: 1px solid rgba(89, 150, 255, 0.42) !important;
   color: #ffffff !important;
-  background: transparent !important;
+  background: rgb(var(--primary-500)) !important;
   box-shadow: 0 8px 20px rgba(27, 78, 245, 0.24);
 }
 
@@ -290,6 +290,7 @@ body {
   --hrai-glow-c: #757bc8;
   --hrai-glow-d: #b783ff;
   --hrai-glow-e: #8187dc;
+  background: #757bc8 !important;
   box-shadow: 0 8px 20px rgba(117, 123, 200, 0.24);
 }
 
@@ -308,7 +309,7 @@ body {
   --hrai-glow-e: #35f2c2;
   border-color: rgba(89, 150, 255, 0.42) !important;
   color: #f8f9fa !important;
-  background: transparent !important;
+  background: #343a40 !important;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
 }
 
@@ -320,7 +321,7 @@ body {
 :root.theme-dark .hrai-animated-button:not(:disabled):hover,
 :root.theme-dark .antigravity-button.hrai-animated-button:not(:disabled):hover {
   color: #ffffff !important;
-  background: transparent !important;
+  background: #343a40 !important;
   box-shadow:
     0 12px 30px rgba(0, 0, 0, 0.34),
     0 0 18px rgba(248, 249, 250, 0.13);
