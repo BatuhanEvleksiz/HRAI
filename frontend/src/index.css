@@ -329,15 +329,6 @@ body {
   to { transform: rotate(360deg); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hrai-animated-button,
-  .hrai-animated-button::before,
-  .hrai-animated-button::after {
-    animation: none !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
 /* Gradient text */
 .gradient-text {
   background: linear-gradient(135deg, rgb(var(--primary-500)) 0%, rgb(var(--accent-600)) 50%, rgb(var(--accent-500)) 100%);
