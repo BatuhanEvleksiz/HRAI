@@ -211,6 +211,12 @@ body {
 
 /* Branded HRAI actions use a restrained version of the animated neon-border
    treatment from the approved reference. */
+@property --hrai-border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
 .hrai-animated-button {
   --hrai-glow-a: #23d5ff;
   --hrai-glow-b: #1b4ef5;
@@ -228,18 +234,22 @@ body {
   content: '';
   position: absolute;
   z-index: -2;
-  inset: -220%;
+  inset: 0;
+  border-radius: inherit;
   background: conic-gradient(
-    from 10deg,
-    transparent 0deg 205deg,
-    var(--hrai-glow-a) 230deg,
-    var(--hrai-glow-b) 265deg,
-    var(--hrai-glow-c) 305deg,
-    transparent 335deg 360deg
+    from var(--hrai-border-angle),
+    var(--hrai-glow-a) 0deg,
+    var(--hrai-glow-b) 85deg,
+    var(--hrai-glow-c) 165deg,
+    transparent 220deg,
+    transparent 300deg,
+    var(--hrai-glow-a) 360deg
   );
   opacity: 0;
-  transform: rotate(0deg);
-  transition: opacity 420ms ease;
+  animation: hrai-border-orbit 1.35s linear infinite;
+  animation-play-state: paused;
+  will-change: --hrai-border-angle;
+  transition: opacity 260ms ease;
 }
 
 .hrai-animated-button::after {
@@ -262,7 +272,7 @@ body {
 
 .hrai-animated-button:not(:disabled):hover::before {
   opacity: 1;
-  animation: hrai-border-orbit 2.2s linear infinite;
+  animation-play-state: running;
 }
 
 .hrai-animated-button:not(:disabled):hover::after {
@@ -316,7 +326,7 @@ body {
 }
 
 @keyframes hrai-border-orbit {
-  to { transform: rotate(360deg); }
+  to { --hrai-border-angle: 360deg; }
 }
 
 @media (prefers-reduced-motion: reduce) {
