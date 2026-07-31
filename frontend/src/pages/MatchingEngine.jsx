@@ -550,7 +550,7 @@ export default function MatchingEngine() {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
             onClick={() => { setSelectedSkills([]); setSelectedLanguages([]); setSelectedUniversities([]); setProjectKeywords([]); setLlmKeywords([]); setPosition(''); setResults(null); setMatchingError(''); }}
             className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-surface-100 hover:bg-surface-200 transition-colors"
@@ -560,7 +560,7 @@ export default function MatchingEngine() {
           <button
             onClick={runApiMatching}
             disabled={isSearching || !weightsValid}
-            className="antigravity-button hrai-animated-button flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="antigravity-button hrai-animated-button w-fit shrink-0 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Target className="w-4 h-4" />
             {isSearching && matchingMode === 'api' ? 'HRAI eşleştiriyor...' : 'HRAI EŞLEŞTİRME'}
