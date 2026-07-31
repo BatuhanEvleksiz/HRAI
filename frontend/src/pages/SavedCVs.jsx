@@ -161,10 +161,10 @@ export default function SavedCVs() {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-surface-100">
+              <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
                 <button
                   onClick={() => setViewingCV(candidate)}
-                  className="flex-1 py-2 rounded-xl text-sm font-medium text-primary-600 hover:bg-primary-50 transition-colors flex items-center justify-center gap-1.5"
+                  className="flex w-[96px] shrink-0 items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-medium text-primary-600 transition-colors hover:bg-primary-50"
                 >
                   <Eye className="w-4 h-4" /> Görüntüle
                 </button>
