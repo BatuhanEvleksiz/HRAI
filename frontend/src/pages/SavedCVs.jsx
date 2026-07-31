@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { api } from '../api/api';
 import CandidateRadarChart from '../components/CandidateRadarChart';
-import { Search, Trash2, Eye, Edit3, X, Save, FolderOpen, CheckCircle, XCircle, Clock, Code, Globe, Briefcase, GraduationCap, MessageSquareText, Loader2 } from 'lucide-react';
+import SlideDeleteConfirm from '../components/SlideDeleteConfirm';
+import { Search, Eye, Edit3, X, Save, FolderOpen, CheckCircle, XCircle, Clock, Code, Globe, Briefcase, GraduationCap, MessageSquareText, Loader2 } from 'lucide-react';
 
 function capitalize(str) {
   if (!str) return '';
@@ -44,23 +45,17 @@ export default function SavedCVs() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDeleteLegacy = (id) => {
-    if (window.confirm('Bu CV\'yi silmek istediğinize emin misiniz?')) {
-      deleteCandidate(id);
-    }
-  };
-
   const handleStatusChangeLegacy = (id, newStatus) => {
     updateCandidate(id, { status: newStatus });
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bu CV silinsin mi?')) return;
     try {
       await api.deleteCandidate(id);
       deleteCandidate(id);
-    } catch {
+    } catch (error) {
       window.alert('CV veritabanından silinemedi.');
+      throw error;
     }
   };
 
@@ -166,7 +161,7 @@ export default function SavedCVs() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-surface-100">
                 <button
                   onClick={() => setViewingCV(candidate)}
                   className="flex-1 py-2 rounded-xl text-sm font-medium text-primary-600 hover:bg-primary-50 transition-colors flex items-center justify-center gap-1.5"
@@ -182,12 +177,10 @@ export default function SavedCVs() {
                   <option value="approved">Onayla</option>
                   <option value="rejected">Reddet</option>
                 </select>
-                <button
-                  onClick={() => handleDelete(candidate.id)}
-                  className="p-2 rounded-xl text-danger-400 hover:bg-danger-50 hover:text-danger-600 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <SlideDeleteConfirm
+                  onConfirm={() => handleDelete(candidate.id)}
+                  label={`${capitalize(candidate.full_name)} CV kaydını sil`}
+                />
               </div>
             </div>
           );

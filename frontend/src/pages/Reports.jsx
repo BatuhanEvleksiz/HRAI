@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { api } from '../api/api';
+import SlideDeleteConfirm from '../components/SlideDeleteConfirm';
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend,
 } from 'recharts';
 import {
-  FileText, Trash2, Eye, Calendar, Target, Users, X, Download,
+  FileText, Eye, Calendar, Target, Users, X, Download,
   Save, SlidersHorizontal,
 } from 'lucide-react';
 
@@ -172,12 +173,12 @@ export default function Reports() {
   };
 
   const handleDelete = async id => {
-    if (!window.confirm('Bu raporu silmek istediğinize emin misiniz?')) return;
     try {
       await api.deleteReport(id);
       deleteReport(id);
     } catch (error) {
       alert(error.message || 'Rapor silinemedi.');
+      throw error;
     }
   };
 
@@ -313,16 +314,17 @@ export default function Reports() {
 
               {report.ai_summary && <p className="text-xs text-gray-500 italic">{report.ai_summary}</p>}
 
-              <div className="flex gap-2 pt-2 border-t border-surface-100">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-surface-100">
                 <button onClick={() => openReport(report)} className="flex-1 py-2 rounded-xl text-sm font-medium text-primary-600 hover:bg-primary-50 flex items-center justify-center gap-1.5">
                   <Eye className="w-4 h-4" /> Detay
                 </button>
                 <button onClick={() => exportReportPdf(report, report.matched_candidates || [])} className="p-2 rounded-xl text-primary-500 hover:bg-primary-50" title="PDF indir">
                   <Download className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleDelete(report.id)} className="p-2 rounded-xl text-danger-400 hover:bg-danger-50 hover:text-danger-600" title="Raporu sil">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <SlideDeleteConfirm
+                  onConfirm={() => handleDelete(report.id)}
+                  label={`${report.title} raporunu sil`}
+                />
               </div>
             </div>
           ))}
