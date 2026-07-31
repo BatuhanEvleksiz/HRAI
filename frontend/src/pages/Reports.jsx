@@ -114,6 +114,7 @@ export default function Reports() {
   const [isLoadingSignals, setIsLoadingSignals] = useState(false);
   const [isSavingScores, setIsSavingScores] = useState(false);
   const [message, setMessage] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const openReport = async report => {
     const enriched = (report.matched_candidates || []).map((matchedCandidate, index) => {
@@ -318,11 +319,14 @@ export default function Reports() {
                 <button onClick={() => openReport(report)} className="flex-1 py-2 rounded-xl text-sm font-medium text-primary-600 hover:bg-primary-50 flex items-center justify-center gap-1.5">
                   <Eye className="w-4 h-4" /> Detay
                 </button>
-                <button onClick={() => exportReportPdf(report, report.matched_candidates || [])} className="p-2 rounded-xl text-primary-500 hover:bg-primary-50" title="PDF indir">
-                  <Download className="w-4 h-4" />
-                </button>
+                {deleteConfirmId !== report.id && (
+                  <button onClick={() => exportReportPdf(report, report.matched_candidates || [])} className="p-2 rounded-xl text-primary-500 hover:bg-primary-50" title="PDF indir">
+                    <Download className="w-4 h-4" />
+                  </button>
+                )}
                 <SlideDeleteConfirm
                   onConfirm={() => handleDelete(report.id)}
+                  onOpenChange={isOpen => setDeleteConfirmId(isOpen ? report.id : null)}
                   label={`${report.title} raporunu sil`}
                 />
               </div>

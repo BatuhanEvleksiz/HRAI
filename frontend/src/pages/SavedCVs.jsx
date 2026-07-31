@@ -24,6 +24,7 @@ export default function SavedCVs() {
   const [editingCV, setEditingCV] = useState(null);
   const [interviewAnalyses, setInterviewAnalyses] = useState([]);
   const [loadingAnalyses, setLoadingAnalyses] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   useEffect(() => {
     if (!viewingCV?.id) {
@@ -168,17 +169,20 @@ export default function SavedCVs() {
                 >
                   <Eye className="w-4 h-4" /> Görüntüle
                 </button>
-                <select
-                  value={candidate.status}
-                  onChange={(e) => handleStatusChange(candidate.id, e.target.value)}
-                  className="px-3 py-2 rounded-xl text-sm bg-surface-50 border border-surface-200 cursor-pointer"
-                >
-                  <option value="pending">Beklemede</option>
-                  <option value="approved">Onayla</option>
-                  <option value="rejected">Reddet</option>
-                </select>
+                {deleteConfirmId !== candidate.id && (
+                  <select
+                    value={candidate.status}
+                    onChange={(e) => handleStatusChange(candidate.id, e.target.value)}
+                    className="px-3 py-2 rounded-xl text-sm bg-surface-50 border border-surface-200 cursor-pointer"
+                  >
+                    <option value="pending">Beklemede</option>
+                    <option value="approved">Onayla</option>
+                    <option value="rejected">Reddet</option>
+                  </select>
+                )}
                 <SlideDeleteConfirm
                   onConfirm={() => handleDelete(candidate.id)}
+                  onOpenChange={isOpen => setDeleteConfirmId(isOpen ? candidate.id : null)}
                   label={`${capitalize(candidate.full_name)} CV kaydını sil`}
                 />
               </div>
