@@ -167,7 +167,7 @@ export default function AnalyzeUpload() {
               <button
                 onClick={handleRealAnalyze}
                 disabled={!selectedFile || isAnalyzing}
-                className="antigravity-button flex items-center gap-2 disabled:opacity-50"
+                className="antigravity-button hrai-animated-button flex items-center gap-2 disabled:opacity-50"
               >
                 <Sparkles className="w-4 h-4" />
                 {isAnalyzing ? 'HRAI analiz ediyor...' : 'HRAI PDF analiz'}

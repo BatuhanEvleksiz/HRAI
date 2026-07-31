@@ -560,7 +560,7 @@ export default function MatchingEngine() {
           <button
             onClick={runApiMatching}
             disabled={isSearching || !weightsValid}
-            className="antigravity-button flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="antigravity-button hrai-animated-button flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Target className="w-4 h-4" />
             {isSearching && matchingMode === 'api' ? 'HRAI eşleştiriyor...' : 'HRAI EŞLEŞTİRME'}

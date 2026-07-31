@@ -209,6 +209,125 @@ body {
   }
 }
 
+/* Branded HRAI actions use a restrained version of the animated neon-border
+   treatment from the approved reference. */
+.hrai-animated-button {
+  --hrai-glow-a: #23d5ff;
+  --hrai-glow-b: #1b4ef5;
+  --hrai-glow-c: #8e94f2;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  background: transparent !important;
+  box-shadow: 0 8px 20px rgba(27, 78, 245, 0.24);
+}
+
+.hrai-animated-button::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  inset: -220%;
+  background: conic-gradient(
+    from 10deg,
+    transparent 0deg 205deg,
+    var(--hrai-glow-a) 230deg,
+    var(--hrai-glow-b) 265deg,
+    var(--hrai-glow-c) 305deg,
+    transparent 335deg 360deg
+  );
+  opacity: 0;
+  transform: rotate(0deg);
+  transition: opacity 420ms ease;
+}
+
+.hrai-animated-button::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 2px;
+  border-radius: calc(0.75rem - 2px);
+  background: linear-gradient(115deg, rgb(var(--primary-500)), rgb(var(--primary-600)));
+  transition: background 420ms ease, box-shadow 420ms ease;
+}
+
+.hrai-animated-button:not(:disabled):hover {
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 30px rgba(27, 78, 245, 0.28),
+    0 0 22px rgba(35, 213, 255, 0.16);
+}
+
+.hrai-animated-button:not(:disabled):hover::before {
+  opacity: 1;
+  animation: hrai-border-orbit 2.2s linear infinite;
+}
+
+.hrai-animated-button:not(:disabled):hover::after {
+  background: linear-gradient(110deg, #111936 0%, #19123f 58%, #21104b 100%);
+  box-shadow: inset 0 0 18px rgba(142, 148, 242, 0.1);
+}
+
+.hrai-animated-button:not(:disabled):active {
+  transform: translateY(0) scale(0.985);
+}
+
+.hrai-animated-button:disabled::before {
+  display: none;
+}
+
+:root.theme-pink .hrai-animated-button {
+  --hrai-glow-a: #9fa0ff;
+  --hrai-glow-b: #8e94f2;
+  --hrai-glow-c: #757bc8;
+  box-shadow: 0 8px 20px rgba(117, 123, 200, 0.24);
+}
+
+:root.theme-pink .hrai-animated-button:not(:disabled):hover {
+  box-shadow:
+    0 12px 30px rgba(117, 123, 200, 0.3),
+    0 0 22px rgba(159, 160, 255, 0.2);
+}
+
+:root.theme-dark .hrai-animated-button,
+:root.theme-dark .antigravity-button.hrai-animated-button {
+  --hrai-glow-a: #f8f9fa;
+  --hrai-glow-b: #adb5bd;
+  --hrai-glow-c: #6c757d;
+  color: #f8f9fa !important;
+  background: transparent !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+:root.theme-dark .hrai-animated-button::after,
+:root.theme-dark .hrai-animated-button:not(:disabled):hover::after {
+  background: linear-gradient(110deg, #212529, #343a40 62%, #495057);
+}
+
+:root.theme-dark .hrai-animated-button:not(:disabled):hover,
+:root.theme-dark .antigravity-button.hrai-animated-button:not(:disabled):hover {
+  color: #ffffff !important;
+  background: transparent !important;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.34),
+    0 0 18px rgba(248, 249, 250, 0.13);
+}
+
+@keyframes hrai-border-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hrai-animated-button,
+  .hrai-animated-button::before,
+  .hrai-animated-button::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Gradient text */
 .gradient-text {
   background: linear-gradient(135deg, rgb(var(--primary-500)) 0%, rgb(var(--accent-600)) 50%, rgb(var(--accent-500)) 100%);
