@@ -512,6 +512,58 @@ body {
            border border-white/50;
   }
 
+  .dashboard-week-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 7px;
+    margin-bottom: 16px;
+  }
+
+  .dashboard-week-day {
+    position: relative;
+    display: flex;
+    min-height: 64px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 1px solid #e6ebf3;
+    border-radius: 12px;
+    background: rgba(248, 250, 253, 0.8);
+    color: #8a94a6;
+    font-size: 10px;
+    font-weight: 700;
+    transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+  }
+
+  .dashboard-week-day:hover { transform: translateY(-1px); border-color: rgb(var(--primary-200)); }
+  .dashboard-week-day strong { color: #344054; font-size: 17px; line-height: 1; }
+  .dashboard-week-day small { min-height: 10px; color: rgb(var(--primary-600)); font-size: 9px; }
+  .dashboard-week-day.today { border-color: rgb(var(--primary-400)); background: rgb(var(--primary-50)); color: rgb(var(--primary-600)); }
+
+  .dashboard-agenda-list { display: grid; gap: 7px; }
+  .dashboard-agenda-item, .dashboard-upcoming-item {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 11px;
+    border: 1px solid #edf0f5;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.62);
+    padding: 10px 12px;
+    transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+  }
+
+  .dashboard-agenda-item:hover, .dashboard-upcoming-item:hover { transform: translateX(2px); border-color: rgb(var(--primary-200)); background: rgb(var(--primary-50)); }
+  .dashboard-agenda-item.today { border-color: rgb(var(--primary-200)); background: rgb(var(--primary-50)); }
+  .dashboard-agenda-date { display: grid; width: 38px; flex: 0 0 38px; place-items: center; border-right: 1px solid #e6ebf3; padding-right: 9px; }
+  .dashboard-agenda-date strong { color: rgb(var(--primary-600)); font-size: 10px; }
+  .dashboard-agenda-date span { color: #667085; font-size: 15px; font-weight: 800; }
+  .dashboard-agenda-time { border-radius: 7px; background: rgb(var(--primary-100)); padding: 5px 7px; color: rgb(var(--primary-700)); font-size: 11px; font-weight: 750; }
+
+  .dashboard-upcoming-item { padding: 12px; }
+  .dashboard-upcoming-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 10px; background: rgb(var(--accent-50)); color: rgb(var(--accent-600)); }
+
   .antigravity-button {
     @apply px-6 py-2.5 rounded-xl font-semibold text-white
            bg-primary-500 hover:bg-primary-600
@@ -862,6 +914,16 @@ body {
   border-color: rgba(255, 255, 255, 0.09);
   box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.32), 0 4px 16px -4px rgba(0, 0, 0, 0.22);
 }
+
+:root.theme-dark .dashboard-week-day,
+:root.theme-dark .dashboard-agenda-item,
+:root.theme-dark .dashboard-upcoming-item { border-color: rgba(255, 255, 255, 0.1); background: rgba(52, 58, 64, 0.72); }
+:root.theme-dark .dashboard-week-day strong,
+:root.theme-dark .dashboard-agenda-item .text-gray-800,
+:root.theme-dark .dashboard-upcoming-item .text-gray-800 { color: #f8f9fa; }
+:root.theme-dark .dashboard-week-day.today,
+:root.theme-dark .dashboard-agenda-item.today { background: rgba(var(--primary-900), 0.45); border-color: rgb(var(--primary-400)); }
+:root.theme-dark .dashboard-agenda-date { border-color: rgba(255, 255, 255, 0.12); }
 
 :root.theme-dark .glass-panel {
   background: rgba(31, 37, 45, 0.78);

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Users, CheckCircle2, XCircle, Clock, CalendarDays, TrendingUp } from 'lucide-react';
+import { Users, CheckCircle2, XCircle, Clock, CalendarDays, TrendingUp, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Sector } from 'recharts';
 
 const barColors = [
@@ -48,11 +48,10 @@ function DonutTooltip({ active, payload }) {
   );
 }
 
-function DonutSlice({ cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, separated }) {
-  const angle = -midAngle * (Math.PI / 180);
-  const offset = separated ? 7 : 0;
+function DonutSlice({ cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, separated }) {
+  const scale = separated ? 1.14 : 1;
   return (
-    <g style={{ transition: 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)' }} transform={`translate(${Math.cos(angle) * offset}, ${Math.sin(angle) * offset})`}>
+    <g style={{ transformOrigin: `${cx}px ${cy}px`, transition: 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1)', transform: `scale(${scale})` }}>
       <Sector cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius} startAngle={startAngle} endAngle={endAngle} fill={fill} stroke="rgba(255,255,255,0.95)" strokeWidth={2} />
     </g>
   );
@@ -95,8 +94,27 @@ export default function Dashboard() {
     });
   }, [candidates]);
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayInterviews = interviews.filter(interview => interview.interview_date === today);
+  const dateKey = date => {
+    const value = new Date(date);
+    if (Number.isNaN(value.getTime())) return '';
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  };
+  const today = dateKey(new Date());
+  const weekStart = new Date();
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const weekStartKey = dateKey(weekStart);
+  const weekEndKey = dateKey(weekEnd);
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(weekStart);
+    day.setDate(weekStart.getDate() + index);
+    return { key: dateKey(day), day: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'][index], date: day.getDate() };
+  });
+  const sortInterviews = (a, b) => `${a.interview_date || ''} ${a.interview_time || ''}`.localeCompare(`${b.interview_date || ''} ${b.interview_time || ''}`);
+  const weekInterviews = interviews.filter(interview => interview.interview_date >= weekStartKey && interview.interview_date <= weekEndKey).sort(sortInterviews);
+  const upcomingInterviews = interviews.filter(interview => interview.interview_date >= today).sort(sortInterviews).slice(0, 5);
 
   const stats = [
     { label: 'Toplam CV', value: totalCVs, icon: Users, color: 'text-primary-500', bg: 'bg-primary-50', ring: 'ring-primary-100' },
@@ -146,9 +164,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="antigravity-card-static p-5">
-        <div className="flex items-center gap-2 mb-3"><CalendarDays className="w-5 h-5 text-primary-500" /><h2 className="text-sm font-semibold text-gray-700">Bugünün Planı</h2></div>
-        {todayInterviews.length ? <div className="space-y-2">{todayInterviews.map(interview => <div key={interview.id} className="flex items-center justify-between py-2 px-4 bg-primary-50/50 rounded-xl"><div className="flex items-center gap-3"><span className="px-3 py-1 bg-primary-500 text-white text-xs font-bold rounded-lg">{interview.interview_time}</span><span className="font-medium text-gray-800">{capitalize(interview.candidate_name)}</span></div><span className="text-sm text-gray-500">{capitalize(interview.position)}</span></div>)}</div> : <p className="text-sm text-gray-400 italic">Bugün planlanmış mülakat bulunmuyor.</p>}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.8fr)] gap-6">
+        <div className="antigravity-card-static p-5 min-w-0">
+          <div className="flex items-center justify-between gap-3 mb-4"><div className="flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary-500" /><div><h2 className="text-sm font-semibold text-gray-700">Bu Haftanın Mülakat Ajandası</h2><p className="text-xs text-gray-400 mt-0.5">Pazartesi - Pazar planı</p></div></div><span className="text-xs font-semibold text-primary-600">{weekInterviews.length} plan</span></div>
+          <div className="dashboard-week-days">{weekDays.map(day => <div key={day.key} className={`dashboard-week-day ${day.key === today ? 'today' : ''}`}><span>{day.day}</span><strong>{day.date}</strong><small>{weekInterviews.filter(interview => interview.interview_date === day.key).length || ''}</small></div>)}</div>
+          {weekInterviews.length ? <div className="dashboard-agenda-list">{weekInterviews.map(interview => <div key={interview.id} className={`dashboard-agenda-item ${interview.interview_date === today ? 'today' : ''}`}><div className="dashboard-agenda-date"><strong>{weekDays.find(day => day.key === interview.interview_date)?.day || ''}</strong><span>{interview.interview_date?.slice(8, 10)}</span></div><div className="min-w-0 flex-1"><p className="font-semibold text-gray-800 truncate">{capitalize(interview.candidate_name)}</p><p className="text-xs text-gray-500 truncate">{capitalize(interview.position)}</p></div><span className="dashboard-agenda-time">{interview.interview_time}</span></div>)}</div> : <p className="py-8 text-center text-sm text-gray-400">Bu hafta planlanmış mülakat bulunmuyor.</p>}
+        </div>
+        <div className="antigravity-card-static p-5 min-w-0">
+          <div className="flex items-center justify-between gap-3 mb-4"><div className="flex items-center gap-2"><Clock className="w-5 h-5 text-accent-600" /><div><h2 className="text-sm font-semibold text-gray-700">Yaklaşan Mülakatlar</h2><p className="text-xs text-gray-400 mt-0.5">Sıradaki görüşmeler</p></div></div><ChevronRight className="w-4 h-4 text-gray-400" /></div>
+          {upcomingInterviews.length ? <div className="space-y-2.5">{upcomingInterviews.map(interview => <div key={interview.id} className="dashboard-upcoming-item"><div className="dashboard-upcoming-icon"><CalendarDays size={15} /></div><div className="min-w-0 flex-1"><p className="font-semibold text-gray-800 truncate">{capitalize(interview.candidate_name)}</p><p className="text-xs text-gray-500 truncate">{capitalize(interview.position)}</p></div><div className="text-right"><p className="text-xs font-bold text-primary-600">{interview.interview_date?.slice(5).replace('-', '.')}</p><p className="text-xs text-gray-400">{interview.interview_time}</p></div></div>)}</div> : <p className="py-8 text-center text-sm text-gray-400">Yaklaşan mülakat bulunmuyor.</p>}
+        </div>
       </div>
     </div>
   );
