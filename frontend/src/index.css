@@ -39,6 +39,250 @@
   --language-900: 16 32 70;
 }
 
+/* Internal job board and reusable batch ingestion */
+.mode-segment {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid #dfe6f2;
+  border-radius: 8px;
+  background: #f4f7fc;
+}
+
+.mode-segment button {
+  min-width: 86px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 650;
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.mode-segment button.active {
+  color: var(--color-primary-600, #1b4ef5);
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(26, 44, 86, 0.12);
+}
+
+.batch-upload-zone {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 132px;
+  padding: 28px;
+  border: 1.5px dashed #cbd7ee;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.batch-upload-zone-active {
+  border-color: #1b4ef5;
+  background: #f2f6ff;
+  box-shadow: inset 0 0 0 1px rgba(27, 78, 245, 0.08);
+}
+
+.job-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 13px;
+  border-bottom: 2px solid transparent;
+  color: #667085;
+  font-size: 14px;
+  font-weight: 650;
+  transition: color 180ms ease, border-color 180ms ease;
+}
+
+.job-tab.active {
+  border-color: var(--color-primary-500, #1b4ef5);
+  color: var(--color-primary-600, #1b4ef5);
+}
+
+.job-label {
+  display: block;
+  margin-bottom: 7px;
+  color: #4b5565;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.job-input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #dfe6f2;
+  border-radius: 7px;
+  background: #fff;
+  padding: 9px 11px;
+  color: #1c2434;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.job-input.pl-10 {
+  padding-left: 2.5rem;
+}
+
+.job-input:focus, .tag-editor:focus-within {
+  border-color: var(--color-primary-400, #5996ff);
+  box-shadow: 0 0 0 3px rgba(27, 78, 245, 0.1);
+}
+
+.job-section-title {
+  margin-bottom: 16px;
+  color: #161e2e;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.tag-editor {
+  display: flex;
+  min-height: 44px;
+  flex-direction: column;
+  gap: 7px;
+  border: 1px solid #dfe6f2;
+  border-radius: 7px;
+  background: #fff;
+  padding: 7px 9px;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.tag-editor input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #1c2434;
+  font-size: 13px;
+  outline: 0;
+}
+
+.job-tag, .job-skill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d8e3ff;
+  border-radius: 6px;
+  background: #f0f5ff;
+  padding: 4px 7px;
+  color: #285fdc;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.job-card, .job-result-card {
+  border: 1px solid #e1e7f0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 20px;
+  box-shadow: 0 5px 18px rgba(28, 48, 84, 0.045);
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.job-card:hover, .job-result-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd9f4;
+  box-shadow: 0 10px 24px rgba(28, 48, 84, 0.08);
+}
+
+.job-icon, .rank-badge {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #edf3ff;
+  color: var(--color-primary-600, #1b4ef5);
+  font-weight: 800;
+}
+
+.job-status {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.job-status-draft { background: #fff7e8; color: #b76a00; }
+.job-status-published { background: #e9fbf3; color: #087d54; }
+.job-status-closed { background: #f1f3f6; color: #667085; }
+
+.job-icon-button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: #667085;
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+.job-icon-button:hover { background: #edf3ff; color: #1b4ef5; }
+.job-icon-button.danger:hover { background: #fff0f1; color: #e5484d; }
+
+.empty-state {
+  display: flex;
+  min-height: 210px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed #d7deea;
+  border-radius: 8px;
+  color: #98a2b3;
+  text-align: center;
+}
+
+.match-job-band {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  border: 1px solid #e1e7f0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 18px 20px;
+}
+
+.score-caption { display: block; color: #8a94a6; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.score-value { display: block; margin-top: 2px; color: #263042; font-size: 19px; }
+
+.requirement-ok, .requirement-missing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.requirement-ok { border: 1px solid #bcebd8; background: #ecfbf5; color: #087d54; }
+.requirement-missing { border: 1px solid #f4c8cb; background: #fff1f2; color: #c9343b; }
+
+.theme-dark .batch-upload-zone,
+.theme-dark .job-card,
+.theme-dark .job-result-card,
+.theme-dark .match-job-band,
+.theme-dark .job-input,
+.theme-dark .tag-editor {
+  border-color: #495057;
+  background: #2b3035;
+}
+
+.theme-dark .mode-segment { border-color: #495057; background: #212529; }
+.theme-dark .mode-segment button.active { background: #495057; color: #f8f9fa; }
+.theme-dark .job-input, .theme-dark .tag-editor input { color: #f8f9fa; }
+
+@media (max-width: 900px) {
+  .batch-upload-zone, .match-job-band { align-items: stretch; flex-direction: column; }
+  .batch-upload-zone button { margin-left: 0; }
+  .job-result-card > div:first-child { flex-wrap: wrap; }
+}
+
 :root.theme-pink {
   --primary-50: 246 247 255;
   --primary-100: 235 236 255;

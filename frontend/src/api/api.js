@@ -60,6 +60,15 @@ export const api = {
   updateCandidate: (id, data) => request(`/candidates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCandidate: (id) => request(`/candidates/${id}`, { method: 'DELETE' }),
 
+  // Internal job postings and job-candidate matching
+  getJobs: (status) => request(`/jobs/${status ? `?status=${status}` : ''}`),
+  getJob: (id) => request(`/jobs/${id}`),
+  createJob: (data) => request('/jobs/', { method: 'POST', body: JSON.stringify(data) }),
+  updateJob: (id, data) => request(`/jobs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteJob: (id) => request(`/jobs/${id}`, { method: 'DELETE' }),
+  matchJobCandidates: (id, candidateIds = []) => request(`/jobs/${id}/match`, { method: 'POST', body: JSON.stringify({ candidate_ids: candidateIds }) }),
+  getJobMatches: (id) => request(`/jobs/${id}/matches`),
+
   // Matching
   matchCandidates: (data) => request('/matching/match', { method: 'POST', body: JSON.stringify(data) }),
 

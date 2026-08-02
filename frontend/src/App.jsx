@@ -12,6 +12,7 @@ import Interviews from './pages/Interviews';
 import Reports from './pages/Reports';
 import ChatAssistant from './pages/ChatAssistant';
 import SettingsPage from './pages/Settings';
+import JobPostings from './pages/JobPostings';
 
 export default function App() {
   const setCandidates = useStore(state => state.setCandidates);
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/analyze" element={<AnalyzeUpload />} />
             <Route path="/candidates" element={<SavedCVs />} />
+            <Route path="/jobs" element={<JobPostings />} />
             <Route path="/matching" element={<MatchingEngine />} />
             <Route path="/interviews" element={<Interviews />} />
             <Route path="/interviews/assistant" element={<Interviews defaultTab="assistant" />} />

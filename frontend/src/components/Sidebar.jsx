@@ -3,13 +3,14 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, FileSearch, FolderOpen, Target,
   CalendarDays, FileText, MessageCircle, Settings,
-  Brain, MessageSquareText
+  Brain, MessageSquareText, BriefcaseBusiness
 } from 'lucide-react';
 
 const menuItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/analyze', label: 'Analiz & Kayıt', icon: FileSearch },
   { path: '/candidates', label: 'Kayıtlı CV\'ler', icon: FolderOpen },
+  { path: '/jobs', label: 'İş İlanları', icon: BriefcaseBusiness },
   { path: '/matching', label: 'Eşleşme Motoru', icon: Target },
   { path: '/interviews', label: 'Mülakatlar', icon: CalendarDays },
   { path: '/interviews/assistant', label: 'Mülakat Asistanı', icon: MessageSquareText },

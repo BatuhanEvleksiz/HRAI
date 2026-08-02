@@ -151,6 +151,11 @@ export default function SavedCVs() {
                 {candidate.location && <p className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{capitalize(candidate.location)}</p>}
               </div>
 
+              {candidate.quality_score != null && <div className="flex items-center justify-between rounded-lg border border-primary-100 bg-primary-50 px-3 py-2">
+                <span className="text-xs font-semibold text-primary-700">CV Profil Kalitesi</span>
+                <strong className="text-sm text-primary-700">%{Math.round(candidate.quality_score)}</strong>
+              </div>}
+
               {(candidate.linkedin_url || candidate.github_url || candidate.portfolio_url) && <div className="flex items-center gap-2">
                 {candidate.linkedin_url && <a href={safeUrl(candidate.linkedin_url)} target="_blank" rel="noreferrer" className="rounded-lg p-1.5 text-primary-500 hover:bg-primary-50" title="LinkedIn"><Link2 className="h-4 w-4" /></a>}
                 {candidate.github_url && <a href={safeUrl(candidate.github_url)} target="_blank" rel="noreferrer" className="rounded-lg p-1.5 text-primary-500 hover:bg-primary-50" title="GitHub"><GitFork className="h-4 w-4" /></a>}
@@ -244,6 +249,11 @@ export default function SavedCVs() {
               {viewingCV.analysis_meta?.pipeline_status === 'success' && <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-lg border border-success-200 bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-600"><ShieldCheck className="h-3.5 w-3.5" />NVIDIA OCR</span>
                 <span className="inline-flex items-center gap-1.5 rounded-lg border border-success-200 bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-600"><ShieldCheck className="h-3.5 w-3.5" />Gemini 3.5 Flash</span>
+              </div>}
+
+              {viewingCV.quality_score != null && <div className="rounded-lg border border-primary-100 bg-primary-50 p-4">
+                <div className="flex items-center justify-between"><div><h4 className="text-sm font-semibold text-primary-700">CV Profil Kalitesi</h4><p className="mt-1 text-xs text-gray-500">Belge doluluğu ve kanıt zenginliği; işe alım kararı değildir.</p></div><strong className="text-2xl text-primary-700">%{Math.round(viewingCV.quality_score)}</strong></div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(viewingCV.quality_breakdown || {}).filter(([, value]) => typeof value === 'object' && value?.max).map(([key, value]) => <div key={key} className="flex items-center justify-between text-xs text-gray-600"><span>{value.label}</span><span>{value.score}/{value.max}</span></div>)}</div>
               </div>}
 
               <div className="border-y border-surface-100 py-4">

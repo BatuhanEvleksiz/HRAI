@@ -1,13 +1,42 @@
 import asyncio
+import hashlib
+import re
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from models import CandidateCreate, CandidateUpdate, CandidateResponse
 from services.nemo_service import extract_document_from_pdf
 from services.gemini_service import analyze_cv
+from services.candidate_quality import calculate_candidate_quality
 from database import get_supabase
 import uuid
 from datetime import datetime
 
 router = APIRouter()
+
+
+def _normalize_phone(value: str | None) -> str:
+    return re.sub(r"\D", "", value or "")
+
+
+def _find_existing_candidate(supabase, candidate: dict) -> dict | None:
+    checks = []
+    email = str(candidate.get("email") or "").strip().lower()
+    phone = _normalize_phone(candidate.get("phone"))
+    linkedin = str(candidate.get("linkedin_url") or "").strip().rstrip("/").lower()
+    fingerprint = candidate.get("source_fingerprint")
+    if email:
+        checks.append(("email", email))
+    if phone:
+        checks.append(("phone", phone))
+    if linkedin:
+        checks.append(("linkedin_url", linkedin))
+    if fingerprint:
+        checks.append(("source_fingerprint", fingerprint))
+
+    for field, value in checks:
+        response = supabase.table("candidates").select("*").eq(field, value).limit(1).execute()
+        if response.data:
+            return response.data[0]
+    return None
 
 def build_candidate_radar(candidate: dict) -> dict:
     """Build a position-independent CV profile radar; interview signals stay empty."""
@@ -99,6 +128,10 @@ async def upload_cv(file: UploadFile = File(...)):
 @router.post("/save")
 def save_candidate(candidate: CandidateCreate):
     c_dict = candidate.dict()
+    if c_dict.get("raw_cv_text"):
+        c_dict["source_fingerprint"] = hashlib.sha256(
+            c_dict["raw_cv_text"].strip().encode("utf-8")
+        ).hexdigest()
     if not c_dict.get("radar_scores"):
         c_dict["radar_scores"] = build_candidate_radar(c_dict)
     # Keep JSONB fields in the shape expected by the Supabase trigger/schema.
@@ -112,7 +145,11 @@ def save_candidate(candidate: CandidateCreate):
             project["technologies"] = []
     for key in ("full_name", "email", "profession", "department", "university", "location"):
         if isinstance(c_dict.get(key), str):
-            c_dict[key] = c_dict[key].lower()
+            c_dict[key] = c_dict[key].strip().lower()
+    if c_dict.get("phone"):
+        c_dict["phone"] = _normalize_phone(c_dict["phone"])
+    if c_dict.get("linkedin_url"):
+        c_dict["linkedin_url"] = c_dict["linkedin_url"].strip().rstrip("/").lower()
     c_dict["skills"] = [str(value).lower() for value in c_dict.get("skills") or []]
     c_dict["languages"] = [
         {
@@ -130,24 +167,26 @@ def save_candidate(candidate: CandidateCreate):
         }
         for item in c_dict.get("projects") or []
     ]
+    quality = calculate_candidate_quality(c_dict)
+    c_dict["quality_score"] = quality["score"]
+    c_dict["quality_breakdown"] = {
+        **quality["breakdown"],
+        "version": quality["version"],
+        "meaning": quality["meaning"],
+    }
 
     supabase = get_supabase()
     if supabase:
         try:
+            existing = _find_existing_candidate(supabase, c_dict)
+            if existing:
+                res = supabase.table("candidates").update(c_dict).eq("id", existing["id"]).execute()
+                saved = res.data[0] if res.data else {**existing, **c_dict}
+                return {**saved, "save_action": "updated"}
             res = supabase.table("candidates").insert(c_dict).execute()
-            return res.data[0]
+            return {**res.data[0], "save_action": "created"}
         except Exception as e:
-            error_message = str(e)
-            if "radar_scores" in error_message and "PGRST204" in error_message:
-                legacy_candidate = {
-                    key: value for key, value in c_dict.items() if key != "radar_scores"
-                }
-                try:
-                    res = supabase.table("candidates").insert(legacy_candidate).execute()
-                    return res.data[0]
-                except Exception as legacy_error:
-                    raise HTTPException(status_code=500, detail=str(legacy_error))
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=f"Aday kaydedilemedi: {e}")
     
     raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; CV sahte olarak kaydedilmedi.")
 
@@ -167,36 +206,60 @@ def list_candidates(status: str = None):
 @router.get("/{id}")
 def get_candidate(id: str):
     supabase = get_supabase()
-    if supabase:
-        try:
-            res = supabase.table("candidates").select("*").eq("id", id).execute()
-            if res.data:
-                return res.data[0]
-        except Exception:
-            pass
-    return demo_candidate
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; aday okunamadı.")
+    try:
+        res = supabase.table("candidates").select("*").eq("id", id).execute()
+        if res.data:
+            return res.data[0]
+        raise HTTPException(status_code=404, detail="Aday bulunamadı.")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Aday okunamadı: {exc}") from exc
 
 @router.put("/{id}")
 def update_candidate(id: str, candidate: CandidateUpdate):
     supabase = get_supabase()
     update_data = {k: v for k, v in candidate.dict(exclude_unset=True).items()}
-    if supabase:
-        try:
-            res = supabase.table("candidates").update(update_data).eq("id", id).execute()
-            return res.data[0] if res.data else None
-        except Exception:
-            pass
-    return {**demo_candidate, **update_data}
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; aday güncellenemedi.")
+    try:
+        current = supabase.table("candidates").select("*").eq("id", id).limit(1).execute()
+        if not current.data:
+            raise HTTPException(status_code=404, detail="Aday bulunamadı.")
+        merged = {**current.data[0], **update_data}
+        quality = calculate_candidate_quality(merged)
+        update_data["quality_score"] = quality["score"]
+        update_data["quality_breakdown"] = {
+            **quality["breakdown"],
+            "version": quality["version"],
+            "meaning": quality["meaning"],
+        }
+        res = supabase.table("candidates").update(update_data).eq("id", id).execute()
+        if not res.data:
+            raise HTTPException(status_code=500, detail="Aday güncellemesi veritabanı tarafından doğrulanamadı.")
+        return res.data[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Aday güncellenemedi: {exc}") from exc
 
 @router.delete("/{id}")
 def delete_candidate(id: str):
     supabase = get_supabase()
-    if supabase:
-        try:
-            supabase.table("candidates").delete().eq("id", id).execute()
-        except Exception:
-            pass
-    return {"message": "Deleted"}
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; aday silinemedi.")
+    try:
+        existing = supabase.table("candidates").select("id").eq("id", id).limit(1).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Aday bulunamadı.")
+        supabase.table("candidates").delete().eq("id", id).execute()
+        return {"message": "Aday silindi."}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Aday silinemedi: {exc}") from exc
 
 @router.post("/demo-analyze")
 def demo_analyze():

@@ -4,7 +4,7 @@ from datetime import datetime
 
 class CandidateCreate(BaseModel):
     full_name: str
-    email: str
+    email: Optional[str] = None
     phone: Optional[str] = None
     profession: Optional[str] = None
     department: Optional[str] = None
@@ -21,8 +21,11 @@ class CandidateCreate(BaseModel):
     ai_summary: Optional[str] = None
     raw_cv_text: Optional[str] = None
     original_filename: Optional[str] = None
+    source_fingerprint: Optional[str] = None
     radar_scores: Dict[str, Any] = Field(default_factory=dict)
     analysis_meta: Dict[str, Any] = Field(default_factory=dict)
+    quality_score: Optional[float] = None
+    quality_breakdown: Dict[str, Any] = Field(default_factory=dict)
 
 class CandidateUpdate(BaseModel):
     full_name: Optional[str] = None
@@ -43,6 +46,9 @@ class CandidateUpdate(BaseModel):
     ai_summary: Optional[str] = None
     radar_scores: Optional[Dict[str, Any]] = None
     analysis_meta: Optional[Dict[str, Any]] = None
+    quality_score: Optional[float] = None
+    quality_breakdown: Optional[Dict[str, Any]] = None
+    source_fingerprint: Optional[str] = None
     status: Optional[str] = None
 
 class CandidateResponse(CandidateCreate):
@@ -129,6 +135,60 @@ class MatchResult(BaseModel):
     score_breakdown: Dict[str, float]
     ai_comment: str
     skill_matches: List[Dict[str, Any]]
+
+
+class JobPostingCreate(BaseModel):
+    title: str
+    company_name: str
+    company_url: Optional[str] = None
+    location: Optional[str] = None
+    workplace_type: Optional[str] = None
+    employment_type: Optional[str] = None
+    seniority: Optional[str] = None
+    department: Optional[str] = None
+    about: Optional[str] = None
+    qualifications: List[str] = Field(default_factory=list)
+    responsibilities: List[str] = Field(default_factory=list)
+    min_experience_years: Optional[float] = None
+    max_experience_years: Optional[float] = None
+    education_level: Optional[str] = None
+    education_departments: List[str] = Field(default_factory=list)
+    military_statuses: List[str] = Field(default_factory=list)
+    language_requirements: List[Dict[str, Any]] = Field(default_factory=list)
+    driver_licenses: List[str] = Field(default_factory=list)
+    required_skills: List[str] = Field(default_factory=list)
+    preferred_skills: List[str] = Field(default_factory=list)
+    preferred_certifications: List[str] = Field(default_factory=list)
+    status: str = "draft"
+
+
+class JobPostingUpdate(BaseModel):
+    title: Optional[str] = None
+    company_name: Optional[str] = None
+    company_url: Optional[str] = None
+    location: Optional[str] = None
+    workplace_type: Optional[str] = None
+    employment_type: Optional[str] = None
+    seniority: Optional[str] = None
+    department: Optional[str] = None
+    about: Optional[str] = None
+    qualifications: Optional[List[str]] = None
+    responsibilities: Optional[List[str]] = None
+    min_experience_years: Optional[float] = None
+    max_experience_years: Optional[float] = None
+    education_level: Optional[str] = None
+    education_departments: Optional[List[str]] = None
+    military_statuses: Optional[List[str]] = None
+    language_requirements: Optional[List[Dict[str, Any]]] = None
+    driver_licenses: Optional[List[str]] = None
+    required_skills: Optional[List[str]] = None
+    preferred_skills: Optional[List[str]] = None
+    preferred_certifications: Optional[List[str]] = None
+    status: Optional[str] = None
+
+
+class JobMatchRequest(BaseModel):
+    candidate_ids: List[str] = Field(default_factory=list)
 
 class ChatMessage(BaseModel):
     user_message: str

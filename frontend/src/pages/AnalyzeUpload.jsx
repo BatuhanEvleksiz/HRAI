@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { api } from '../api/api';
 import { Upload, FileText, Sparkles, Save, X, CheckCircle, Briefcase, GraduationCap, Globe, Code, FolderGit2, MapPin, Link2, GitFork, ExternalLink, Award, Building2, ShieldCheck } from 'lucide-react';
+import BatchCandidateUploader from '../components/BatchCandidateUploader';
 
 function capitalize(str) {
   if (!str) return '';
@@ -14,13 +15,14 @@ function safeUrl(url) {
 }
 
 export default function AnalyzeUpload() {
-  const { analyzedCV, setAnalyzedCV, addCandidate } = useStore();
+  const { analyzedCV, setAnalyzedCV, addCandidate, updateCandidate } = useStore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMode, setUploadMode] = useState('single');
 
   const handleDemoAnalyze = () => {
     setIsAnalyzing(true);
@@ -121,7 +123,8 @@ export default function AnalyzeUpload() {
       try {
         setError('');
         const savedCandidate = await api.saveCandidate(analyzedCV);
-        addCandidate(savedCandidate);
+        if (savedCandidate.save_action === 'updated') updateCandidate(savedCandidate.id, savedCandidate);
+        else addCandidate(savedCandidate);
         setAnalyzedCV(savedCandidate);
         setSaved(true);
       } catch (saveError) {
@@ -135,12 +138,36 @@ export default function AnalyzeUpload() {
     setSaved(false);
   };
 
+  if (uploadMode === 'batch') {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Analiz & Kayıt</h1>
+            <p className="mt-1 text-gray-500">PDF CV’leri analiz edin ve güvenli biçimde kaydedin</p>
+          </div>
+          <div className="mode-segment" role="tablist" aria-label="Yükleme modu">
+            <button type="button" onClick={() => setUploadMode('single')}>Tek CV</button>
+            <button type="button" className="active" aria-selected="true">Toplu CV</button>
+          </div>
+        </div>
+        <BatchCandidateUploader />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Analiz & Kayıt</h1>
-        <p className="text-gray-500 mt-1">PDF CV yükleyin, AI otomatik analiz etsin</p>
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Analiz & Kayıt</h1>
+          <p className="text-gray-500 mt-1">PDF CV yükleyin, AI otomatik analiz etsin</p>
+        </div>
+        <div className="mode-segment" role="tablist" aria-label="Yükleme modu">
+          <button type="button" className="active" aria-selected="true">Tek CV</button>
+          <button type="button" onClick={() => setUploadMode('batch')}>Toplu CV</button>
+        </div>
       </div>
 
       {error && (
