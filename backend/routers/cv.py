@@ -84,9 +84,9 @@ async def upload_cv(file: UploadFile = File(...)):
         raise HTTPException(status_code=422, detail="PDF'den okunabilir metin çıkarılamadı.")
 
     try:
-        data = await asyncio.wait_for(asyncio.to_thread(analyze_cv, text), timeout=90)
+        data = await asyncio.wait_for(asyncio.to_thread(analyze_cv, text), timeout=180)
     except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="Gemini CV analizi 90 saniyede tamamlanamadı.")
+        raise HTTPException(status_code=504, detail="Gemini CV analizi yeniden denemelere rağmen tamamlanamadı.")
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     analysis_meta = {**document.get("metadata", {}), **data.get("analysis_meta", {})}

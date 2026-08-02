@@ -2,11 +2,15 @@ import os
 import google.generativeai as genai
 import json
 import re
+from google.api_core import retry as api_retry
 from dotenv import load_dotenv
 
 load_dotenv()
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+GEMINI_INPUT_LIMIT = int(os.getenv("GEMINI_CV_INPUT_LIMIT", "60000"))
+GEMINI_REQUEST_TIMEOUT = float(os.getenv("GEMINI_REQUEST_TIMEOUT", "70"))
+GEMINI_RETRY_TIMEOUT = float(os.getenv("GEMINI_RETRY_TIMEOUT", "150"))
 api_key = os.getenv("GEMINI_API_KEY")
 if api_key and "your_" not in api_key:
     genai.configure(api_key=api_key)
@@ -74,6 +78,7 @@ def analyze_cv(text: str) -> dict:
     
     try:
         model = genai.GenerativeModel(GEMINI_MODEL)
+        cv_text = text[:GEMINI_INPUT_LIMIT]
         prompt = (
             "Aşağıdaki CV OCR çıktısını yapılandırılmış aday profiline dönüştür. "
             "NVIDIA OCR ve PDF metin katmanında tekrar eden bilgileri tekilleştir. "
@@ -81,7 +86,7 @@ def analyze_cv(text: str) -> dict:
             "department alanı adayın eğitim bölümü/uzmanlık alanıdır; profession mevcut veya hedef iş unvanıdır. "
             "experience_years toplam profesyonel deneyimin tam yıl karşılığıdır. "
             "LinkedIn, GitHub ve portföy bağlantılarını tam URL olarak koru. Eksik alanlarda boş string veya boş liste kullan.\n\n"
-            f"{text}"
+            f"{cv_text}"
         )
         res = model.generate_content(
             prompt,
@@ -90,12 +95,24 @@ def analyze_cv(text: str) -> dict:
                 "response_mime_type": "application/json",
                 "response_schema": CV_RESPONSE_SCHEMA,
             },
+            request_options={
+                "timeout": GEMINI_REQUEST_TIMEOUT,
+                "retry": api_retry.Retry(
+                    predicate=api_retry.if_transient_error,
+                    initial=1.0,
+                    maximum=8.0,
+                    multiplier=2.0,
+                    timeout=GEMINI_RETRY_TIMEOUT,
+                ),
+            },
         )
         data = json.loads(res.text.strip())
         data["analysis_meta"] = {
             "llm_provider": "google",
             "llm_model": GEMINI_MODEL,
             "llm_status": "success",
+            "llm_input_chars": len(cv_text),
+            "llm_input_truncated": len(text) > len(cv_text),
         }
         return data
     except Exception as exc:

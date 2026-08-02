@@ -82,6 +82,32 @@ def _selectable_pdf_text(file_bytes: bytes) -> str:
         return ""
 
 
+def _merge_document_text(nvidia_text: str, selectable_text: str) -> tuple[str, bool]:
+    """Avoid sending near-identical OCR and native text layers to Gemini."""
+    if not selectable_text:
+        return "[NVIDIA NEMOTRON PARSE]\n" + nvidia_text, False
+
+    token_pattern = r"[\w@.+:/-]+"
+    nvidia_tokens = set(re.findall(token_pattern, nvidia_text.casefold()))
+    native_tokens = set(re.findall(token_pattern, selectable_text.casefold()))
+    smaller_layer_size = min(len(nvidia_tokens), len(native_tokens))
+    overlap = (
+        len(nvidia_tokens & native_tokens) / smaller_layer_size
+        if smaller_layer_size
+        else 0.0
+    )
+    if overlap >= 0.82:
+        return "[NVIDIA NEMOTRON PARSE]\n" + nvidia_text, False
+
+    return (
+        "[NVIDIA NEMOTRON PARSE]\n"
+        + nvidia_text
+        + "\n\n[PDF TEXT LAYER]\n"
+        + selectable_text,
+        True,
+    )
+
+
 def _nemotron_blocks(message: dict) -> list[dict]:
     tool_calls = message.get("tool_calls") or []
     if tool_calls:
@@ -136,17 +162,19 @@ def extract_document_from_pdf(file_bytes: bytes, require_nvidia: bool = True) ->
             page_texts.append(ordered_page)
         nvidia_text = "\n\n".join(page_texts).strip()
         if nvidia_text:
-            combined_parts = ["[NVIDIA NEMOTRON PARSE]\n" + nvidia_text]
-            if selectable_text:
-                combined_parts.append("[PDF TEXT LAYER]\n" + selectable_text)
+            combined_text, native_text_merged = _merge_document_text(
+                nvidia_text,
+                selectable_text,
+            )
             return {
-                "text": "\n\n".join(combined_parts),
+                "text": combined_text,
                 "metadata": {
                     "ocr_provider": "nvidia",
                     "ocr_model": NVIDIA_MODEL,
                     "ocr_status": "success",
                     "ocr_pages": page_count,
                     "native_text_layer": bool(selectable_text),
+                    "native_text_merged": native_text_merged,
                 },
             }
         raise RuntimeError("NVIDIA NeMo OCR boş yanıt döndürdü.")
