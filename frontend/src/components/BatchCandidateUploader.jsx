@@ -9,7 +9,7 @@ function makeEntry(file, index) {
   return { id: `${file.name}-${file.size}-${file.lastModified}-${index}`, file, name: file.name, status: 'waiting', progress: 0, error: '', candidate: null };
 }
 
-export default function BatchCandidateUploader({ jobId = null, onComplete }) {
+export default function BatchCandidateUploader({ jobId = null, autoMatch = true, actionLabel = '', onComplete }) {
   const inputRef = useRef(null);
   const [entries, setEntries] = useState([]);
   const [dragActive, setDragActive] = useState(false);
@@ -65,7 +65,7 @@ export default function BatchCandidateUploader({ jobId = null, onComplete }) {
     };
     await Promise.all([worker(), worker()]);
     let matchResponse = null;
-    if (jobId && savedCandidates.length) {
+    if (jobId && autoMatch && savedCandidates.length) {
       try {
         matchResponse = await api.matchJobCandidates(jobId, savedCandidates.map(candidate => candidate.id));
       } catch (error) {
@@ -100,7 +100,7 @@ export default function BatchCandidateUploader({ jobId = null, onComplete }) {
             <button type="button" className="rounded-lg p-2 text-gray-400 hover:bg-surface-100 hover:text-danger-500" title="Listeyi temizle" onClick={() => setEntries([])} disabled={processing}><X size={18} /></button>
             <button type="button" className="antigravity-button flex min-w-[190px] items-center justify-center gap-2 px-4 py-2.5 disabled:opacity-50" onClick={runBatch} disabled={processing || entries.every(entry => entry.status === 'completed')}>
               {processing ? <LoaderCircle size={17} className="animate-spin" /> : failed ? <RefreshCw size={17} /> : <Upload size={17} />}
-              {processing ? 'CV’ler işleniyor' : failed ? 'Hatalıları yeniden dene' : jobId ? 'Yükle ve eşleştir' : 'Analiz et ve kaydet'}
+              {processing ? 'CV’ler işleniyor' : failed ? 'Hatalıları yeniden dene' : actionLabel || (jobId && autoMatch ? 'Yükle ve eşleştir' : jobId ? 'Analiz et ve seçime ekle' : 'Analiz et ve kaydet')}
             </button>
           </div>
         </div>

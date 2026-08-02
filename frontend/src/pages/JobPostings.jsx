@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle, BriefcaseBusiness, Building2, Check, ChevronRight, Clock3,
-  MapPin, Pencil, Plus, Save, Search, Sparkles, Trash2, Users, X,
+  MapPin, Pencil, Plus, Save, Search, Sparkles, Trash2, Upload, Users, X,
 } from 'lucide-react';
 import { api } from '../api/api';
 import BatchCandidateUploader from '../components/BatchCandidateUploader';
+import { useStore } from '../store/useStore';
 
 const EMPTY_JOB = {
   title: '', company_name: '', company_url: '', location: '', workplace_type: 'İş Yerinde',
@@ -150,6 +151,10 @@ export default function JobPostings() {
   const [selectedJobId, setSelectedJobId] = useState('');
   const [matchResponse, setMatchResponse] = useState(null);
   const [matchingExisting, setMatchingExisting] = useState(false);
+  const [candidateSource, setCandidateSource] = useState('upload');
+  const [candidateSearch, setCandidateSearch] = useState('');
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState([]);
+  const candidates = useStore(state => state.candidates);
 
   const loadJobs = async () => {
     setLoading(true);
@@ -165,15 +170,38 @@ export default function JobPostings() {
   useEffect(() => { loadJobs(); }, []);
 
   const filteredJobs = useMemo(() => jobs.filter(job => `${job.title} ${job.company_name} ${job.department}`.toLowerCase().includes(search.toLowerCase())), [jobs, search]);
+  const filteredCandidates = useMemo(() => {
+    const query = candidateSearch.trim().toLocaleLowerCase('tr-TR');
+    if (!query) return candidates;
+    return candidates.filter(candidate => [
+      candidate.full_name,
+      candidate.profession,
+      candidate.university,
+      candidate.department,
+      ...(candidate.skills || []),
+    ].filter(Boolean).join(' ').toLocaleLowerCase('tr-TR').includes(query));
+  }, [candidateSearch, candidates]);
   const selectedJob = jobs.find(job => job.id === selectedJobId);
   const deleteJob = async (job) => {
     if (!window.confirm(`“${job.title}” ilanı silinsin mi?`)) return;
     try { await api.deleteJob(job.id); await loadJobs(); } catch (deleteError) { setError(deleteError.message); }
   };
+  const toggleCandidate = (candidateId) => {
+    setSelectedCandidateIds(current => current.includes(candidateId)
+      ? current.filter(id => id !== candidateId)
+      : [...current, candidateId]);
+  };
+  const toggleVisibleCandidates = () => {
+    const visibleIds = filteredCandidates.map(candidate => candidate.id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedCandidateIds.includes(id));
+    setSelectedCandidateIds(current => allVisibleSelected
+      ? current.filter(id => !visibleIds.includes(id))
+      : [...new Set([...current, ...visibleIds])]);
+  };
   const matchExisting = async () => {
-    if (!selectedJobId) return;
+    if (!selectedJobId || !selectedCandidateIds.length) return;
     setMatchingExisting(true); setError('');
-    try { setMatchResponse(await api.matchJobCandidates(selectedJobId, [])); } catch (matchError) { setError(matchError.message); }
+    try { setMatchResponse(await api.matchJobCandidates(selectedJobId, selectedCandidateIds)); } catch (matchError) { setError(matchError.message); }
     finally { setMatchingExisting(false); }
   };
 
@@ -191,8 +219,56 @@ export default function JobPostings() {
         <div className="mt-5 flex items-center justify-between border-t border-surface-100 pt-4"><button className="inline-flex items-center gap-1 text-sm font-semibold text-primary-600" onClick={() => { setSelectedJobId(job.id); setTab('match'); }}>Aday eşleştir <ChevronRight size={16} /></button><div className="flex gap-1"><button className="job-icon-button" title="Düzenle" onClick={() => { setFormJob(job); setShowForm(true); }}><Pencil size={16} /></button><button className="job-icon-button danger" title="Sil" onClick={() => deleteJob(job)}><Trash2 size={16} /></button></div></div>
       </article>)}</div> : <div className="empty-state"><BriefcaseBusiness size={28} /><p className="font-semibold">Henüz iş ilanı yok</p><span>İlk ilanı oluşturarak kriter bazlı eşleştirmeyi başlatın.</span></div>}
     </> : <>
-      <section className="match-job-band"><div><p className="job-label">Eşleştirilecek iş ilanı</p><select className="job-input min-w-[320px]" value={selectedJobId} onChange={event => { setSelectedJobId(event.target.value); setMatchResponse(null); }}><option value="">İlan seçin</option>{jobs.map(job => <option key={job.id} value={job.id}>{job.title} · {job.company_name}</option>)}</select></div>{selectedJob && <div className="min-w-0 flex-1 border-l border-surface-200 pl-6"><p className="font-bold text-gray-900">{selectedJob.title}</p><p className="mt-1 text-sm text-gray-500">{selectedJob.company_name} · {(selectedJob.required_skills || []).length} zorunlu yetkinlik</p></div>}<button className="hrai-animated-button inline-flex min-w-[220px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50" onClick={matchExisting} disabled={!selectedJobId || matchingExisting}><Sparkles size={16} />{matchingExisting ? 'Eşleştiriliyor' : 'Kayıtlı adayları eşleştir'}</button></section>
-      {selectedJobId ? <BatchCandidateUploader key={selectedJobId} jobId={selectedJobId} onComplete={({ matchResponse: response }) => { if (response) setMatchResponse(response); }} /> : <div className="empty-state"><Users size={28} /><p className="font-semibold">Önce bir iş ilanı seçin</p><span>Toplu PDF yükleme alanı ilan seçildikten sonra açılır.</span></div>}
+      <section className="match-job-band">
+        <div>
+          <p className="job-label">Eşleştirilecek iş ilanı</p>
+          <select className="job-input min-w-[320px]" value={selectedJobId} onChange={event => { setSelectedJobId(event.target.value); setMatchResponse(null); setSelectedCandidateIds([]); }}>
+            <option value="">İlan seçin</option>
+            {jobs.map(job => <option key={job.id} value={job.id}>{job.title} · {job.company_name}</option>)}
+          </select>
+        </div>
+        {selectedJob && <div className="min-w-0 flex-1 border-l border-surface-200 pl-6"><p className="font-bold text-gray-900">{selectedJob.title}</p><p className="mt-1 text-sm text-gray-500">{selectedJob.company_name} · {(selectedJob.required_skills || []).length} zorunlu yetkinlik</p></div>}
+        <button className="hrai-animated-button inline-flex min-w-[220px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50" onClick={matchExisting} disabled={!selectedJobId || !selectedCandidateIds.length || matchingExisting}>
+          <Sparkles size={16} />{matchingExisting ? 'Eşleştiriliyor' : `Seçilen adayları eşleştir (${selectedCandidateIds.length})`}
+        </button>
+      </section>
+      {selectedJobId ? <section className="candidate-source-panel">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="mode-segment candidate-source-switch" aria-label="Aday kaynağı">
+            <button type="button" className={candidateSource === 'upload' ? 'active' : ''} onClick={() => setCandidateSource('upload')}><Upload size={15} />Yeni PDF yükle</button>
+            <button type="button" className={candidateSource === 'saved' ? 'active' : ''} onClick={() => setCandidateSource('saved')}><Users size={15} />Kayıtlı CV’lerden seç</button>
+          </div>
+          <p className="text-sm font-semibold text-primary-600">{selectedCandidateIds.length} aday seçildi</p>
+        </div>
+
+        {candidateSource === 'upload' ? <BatchCandidateUploader
+          key={selectedJobId}
+          jobId={selectedJobId}
+          autoMatch={false}
+          actionLabel="Analiz et ve seçime ekle"
+          onComplete={({ savedCandidates }) => setSelectedCandidateIds(current => [...new Set([...current, ...savedCandidates.map(candidate => candidate.id)])])}
+        /> : <div className="candidate-picker">
+          <div className="candidate-picker-toolbar">
+            <div className="relative min-w-0 flex-1">
+              <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input className="job-input pl-10" value={candidateSearch} onChange={event => setCandidateSearch(event.target.value)} placeholder="İsim, pozisyon, üniversite veya yetkinlik ara" />
+            </div>
+            <button type="button" className="candidate-select-all" onClick={toggleVisibleCandidates}>
+              {filteredCandidates.length > 0 && filteredCandidates.every(candidate => selectedCandidateIds.includes(candidate.id)) ? 'Görünenleri temizle' : 'Görünenlerin tümünü seç'}
+            </button>
+          </div>
+          {filteredCandidates.length ? <div className="candidate-picker-grid">{filteredCandidates.map(candidate => {
+            const selected = selectedCandidateIds.includes(candidate.id);
+            return <button type="button" key={candidate.id} className={`candidate-pick-card ${selected ? 'selected' : ''}`} aria-pressed={selected} onClick={() => toggleCandidate(candidate.id)}>
+              <span className="candidate-pick-check">{selected && <Check size={14} />}</span>
+              <span className="candidate-pick-name">{candidate.full_name}</span>
+              <span className="candidate-pick-role">{candidate.profession || 'Pozisyon belirtilmemiş'} · {candidate.experience_years || 0} yıl</span>
+              <span className="candidate-pick-school">{candidate.university || 'Üniversite belirtilmemiş'}</span>
+              <span className="candidate-pick-skills">{(candidate.skills || []).slice(0, 3).map(skill => <span key={skill}>{skill}</span>)}</span>
+            </button>;
+          })}</div> : <div className="candidate-picker-empty">Aramanızla eşleşen kayıtlı CV bulunamadı.</div>}
+        </div>}
+      </section> : <div className="empty-state"><Users size={28} /><p className="font-semibold">Önce bir iş ilanı seçin</p><span>CV seçim alanı ilan seçildikten sonra açılır.</span></div>}
       <MatchResults response={matchResponse} />
     </>}
   </div>;
