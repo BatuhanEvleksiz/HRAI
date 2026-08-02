@@ -228,8 +228,8 @@ export default function JobPostings() {
           </select>
         </div>
         {selectedJob && <div className="min-w-0 flex-1 border-l border-surface-200 pl-6"><p className="font-bold text-gray-900">{selectedJob.title}</p><p className="mt-1 text-sm text-gray-500">{selectedJob.company_name} · {(selectedJob.required_skills || []).length} zorunlu yetkinlik</p></div>}
-        <button className="hrai-animated-button inline-flex min-w-[220px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50" onClick={matchExisting} disabled={!selectedJobId || !selectedCandidateIds.length || matchingExisting}>
-          <Sparkles size={16} />{matchingExisting ? 'Eşleştiriliyor' : `Seçilen adayları eşleştir (${selectedCandidateIds.length})`}
+        <button className="hrai-animated-button inline-flex min-w-[220px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50" onClick={() => selectedCandidateIds.length ? matchExisting() : setCandidateSource('saved')} disabled={!selectedJobId || matchingExisting}>
+          {selectedCandidateIds.length ? <Sparkles size={16} /> : <Users size={16} />}{matchingExisting ? 'Eşleştiriliyor' : selectedCandidateIds.length ? `Seçilen adayları eşleştir (${selectedCandidateIds.length})` : 'Kayıtlı adaylardan seç'}
         </button>
       </section>
       {selectedJobId ? <section className="candidate-source-panel">
@@ -262,9 +262,7 @@ export default function JobPostings() {
             return <button type="button" key={candidate.id} className={`candidate-pick-card ${selected ? 'selected' : ''}`} aria-pressed={selected} onClick={() => toggleCandidate(candidate.id)}>
               <span className="candidate-pick-check">{selected && <Check size={14} />}</span>
               <span className="candidate-pick-name">{candidate.full_name}</span>
-              <span className="candidate-pick-role">{candidate.profession || 'Pozisyon belirtilmemiş'} · {candidate.experience_years || 0} yıl</span>
-              <span className="candidate-pick-school">{candidate.university || 'Üniversite belirtilmemiş'}</span>
-              <span className="candidate-pick-skills">{(candidate.skills || []).slice(0, 3).map(skill => <span key={skill}>{skill}</span>)}</span>
+              <span className="candidate-pick-role">{candidate.profession || 'Pozisyon belirtilmemiş'}</span>
             </button>;
           })}</div> : <div className="candidate-picker-empty">Aramanızla eşleşen kayıtlı CV bulunamadı.</div>}
         </div>}
