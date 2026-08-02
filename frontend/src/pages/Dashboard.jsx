@@ -26,6 +26,24 @@ function capitalize(value) {
   return value.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
+function initials(value) {
+  return (value || 'Aday').trim().split(/\s+/).slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('');
+}
+
+function relativeTime(value) {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return 'Yeni';
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+  if (minutes < 1) return 'Az önce';
+  if (minutes < 60) return `${minutes} dk önce`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} saat önce`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} gün önce`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks} hafta önce`;
+}
+
 function BarTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   const item = payload[0].payload;
@@ -115,6 +133,10 @@ export default function Dashboard() {
   const sortInterviews = (a, b) => `${a.interview_date || ''} ${a.interview_time || ''}`.localeCompare(`${b.interview_date || ''} ${b.interview_time || ''}`);
   const weekInterviews = interviews.filter(interview => interview.interview_date >= weekStartKey && interview.interview_date <= weekEndKey).sort(sortInterviews);
   const upcomingInterviews = interviews.filter(interview => interview.interview_date >= today).sort(sortInterviews).slice(0, 5);
+  const [selectedAgendaDate, setSelectedAgendaDate] = useState(today);
+  const activeAgendaDate = weekDays.some(day => day.key === selectedAgendaDate) ? selectedAgendaDate : weekStartKey;
+  const selectedDayInterviews = weekInterviews.filter(interview => interview.interview_date === activeAgendaDate);
+  const recentCandidates = [...candidates].sort((a, b) => new Date(b.created_at || b.updated_at || 0).getTime() - new Date(a.created_at || a.updated_at || 0).getTime()).slice(0, 5);
 
   const stats = [
     { label: 'Toplam CV', value: totalCVs, icon: Users, color: 'text-primary-500', bg: 'bg-primary-50', ring: 'ring-primary-100' },
@@ -166,14 +188,19 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.8fr)] gap-6">
         <div className="antigravity-card-static p-5 min-w-0">
-          <div className="flex items-center justify-between gap-3 mb-4"><div className="flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary-500" /><div><h2 className="text-sm font-semibold text-gray-700">Bu Haftanın Mülakat Ajandası</h2><p className="text-xs text-gray-400 mt-0.5">Pazartesi - Pazar planı</p></div></div><span className="text-xs font-semibold text-primary-600">{weekInterviews.length} plan</span></div>
-          <div className="dashboard-week-days">{weekDays.map(day => <div key={day.key} className={`dashboard-week-day ${day.key === today ? 'today' : ''}`}><span>{day.day}</span><strong>{day.date}</strong><small>{weekInterviews.filter(interview => interview.interview_date === day.key).length || ''}</small></div>)}</div>
-          {weekInterviews.length ? <div className="dashboard-agenda-list">{weekInterviews.map(interview => <div key={interview.id} className={`dashboard-agenda-item ${interview.interview_date === today ? 'today' : ''}`}><div className="dashboard-agenda-date"><strong>{weekDays.find(day => day.key === interview.interview_date)?.day || ''}</strong><span>{interview.interview_date?.slice(8, 10)}</span></div><div className="min-w-0 flex-1"><p className="font-semibold text-gray-800 truncate">{capitalize(interview.candidate_name)}</p><p className="text-xs text-gray-500 truncate">{capitalize(interview.position)}</p></div><span className="dashboard-agenda-time">{interview.interview_time}</span></div>)}</div> : <p className="py-8 text-center text-sm text-gray-400">Bu hafta planlanmış mülakat bulunmuyor.</p>}
+          <div className="flex items-center justify-between gap-3 mb-4"><div className="flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary-500" /><div><h2 className="text-sm font-semibold text-gray-700">Bu Haftanın Mülakat Ajandası</h2><p className="text-xs text-gray-400 mt-0.5">Gün seçerek o günün planını görüntüleyin</p></div></div><span className="text-xs font-semibold text-primary-600">{selectedDayInterviews.length} plan</span></div>
+          <div className="dashboard-week-days">{weekDays.map(day => <button type="button" key={day.key} aria-pressed={day.key === activeAgendaDate} className={`dashboard-week-day ${day.key === today ? 'today' : ''} ${day.key === activeAgendaDate ? 'selected' : ''}`} onClick={() => setSelectedAgendaDate(day.key)}><span>{day.day}</span><strong>{day.date}</strong><small>{weekInterviews.filter(interview => interview.interview_date === day.key).length || ''}</small></button>)}</div>
+          {selectedDayInterviews.length ? <div className="dashboard-agenda-list">{selectedDayInterviews.map(interview => <div key={interview.id} className={`dashboard-agenda-item ${interview.interview_date === today ? 'today' : ''}`}><div className="dashboard-agenda-date"><strong>{weekDays.find(day => day.key === interview.interview_date)?.day || ''}</strong><span>{interview.interview_date?.slice(8, 10)}</span></div><div className="min-w-0 flex-1"><p className="font-semibold text-gray-800 truncate">{capitalize(interview.candidate_name)}</p><p className="text-xs text-gray-500 truncate">{capitalize(interview.position)}</p></div><span className="dashboard-agenda-time">{interview.interview_time}</span></div>)}</div> : <p className="py-8 text-center text-sm text-gray-400">Bu gün için planlanmış mülakat bulunmuyor.</p>}
         </div>
         <div className="antigravity-card-static p-5 min-w-0">
           <div className="flex items-center justify-between gap-3 mb-4"><div className="flex items-center gap-2"><Clock className="w-5 h-5 text-accent-600" /><div><h2 className="text-sm font-semibold text-gray-700">Yaklaşan Mülakatlar</h2><p className="text-xs text-gray-400 mt-0.5">Sıradaki görüşmeler</p></div></div><ChevronRight className="w-4 h-4 text-gray-400" /></div>
           {upcomingInterviews.length ? <div className="space-y-2.5">{upcomingInterviews.map(interview => <div key={interview.id} className="dashboard-upcoming-item"><div className="dashboard-upcoming-icon"><CalendarDays size={15} /></div><div className="min-w-0 flex-1"><p className="font-semibold text-gray-800 truncate">{capitalize(interview.candidate_name)}</p><p className="text-xs text-gray-500 truncate">{capitalize(interview.position)}</p></div><div className="text-right"><p className="text-xs font-bold text-primary-600">{interview.interview_date?.slice(5).replace('-', '.')}</p><p className="text-xs text-gray-400">{interview.interview_time}</p></div></div>)}</div> : <p className="py-8 text-center text-sm text-gray-400">Yaklaşan mülakat bulunmuyor.</p>}
         </div>
+      </div>
+
+      <div className="antigravity-card-static p-5">
+        <div className="flex items-center justify-between gap-3 mb-4"><div><h2 className="text-sm font-semibold text-gray-700">Kayıtlı CV’ler · Son Eklenen Adaylar</h2><p className="text-xs text-gray-400 mt-0.5">CV havuzuna en son eklenen 5 kişi</p></div><Users className="w-5 h-5 text-primary-500" /></div>
+        {recentCandidates.length ? <div className="dashboard-recent-list">{recentCandidates.map(candidate => <div key={candidate.id} className="dashboard-recent-item"><div className="dashboard-recent-avatar">{initials(candidate.full_name)}</div><div className="min-w-0 flex-1"><p className="font-semibold text-gray-800 truncate">{capitalize(candidate.full_name)}</p><p className="text-xs text-gray-500 truncate">{capitalize(candidate.department || candidate.profession || 'Bölüm belirtilmemiş')}</p></div><span className="dashboard-recent-time">{relativeTime(candidate.created_at || candidate.updated_at)}</span></div>)}</div> : <p className="py-8 text-center text-sm text-gray-400">Henüz kayıtlı aday bulunmuyor.</p>}
       </div>
     </div>
   );

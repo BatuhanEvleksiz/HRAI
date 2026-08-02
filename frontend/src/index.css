@@ -537,6 +537,7 @@ body {
   }
 
   .dashboard-week-day:hover { transform: translateY(-1px); border-color: rgb(var(--primary-200)); }
+  .dashboard-week-day.selected { border-color: rgb(var(--primary-500)); background: rgb(var(--primary-100)); box-shadow: 0 0 0 3px rgba(27, 78, 245, 0.08); }
   .dashboard-week-day strong { color: #344054; font-size: 17px; line-height: 1; }
   .dashboard-week-day small { min-height: 10px; color: rgb(var(--primary-600)); font-size: 9px; }
   .dashboard-week-day.today { border-color: rgb(var(--primary-400)); background: rgb(var(--primary-50)); color: rgb(var(--primary-600)); }
@@ -563,6 +564,22 @@ body {
 
   .dashboard-upcoming-item { padding: 12px; }
   .dashboard-upcoming-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 10px; background: rgb(var(--accent-50)); color: rgb(var(--accent-600)); }
+
+  .dashboard-recent-list { display: grid; gap: 8px; }
+  .dashboard-recent-item {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid #edf0f5;
+    padding: 11px 4px;
+    transition: background-color 180ms ease, transform 180ms ease;
+  }
+
+  .dashboard-recent-item:first-child { border-top: 0; padding-top: 0; }
+  .dashboard-recent-item:hover { transform: translateX(2px); background: rgb(var(--primary-50)); }
+  .dashboard-recent-avatar { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border-radius: 10px; background: rgb(var(--primary-100)); color: rgb(var(--primary-700)); font-size: 12px; font-weight: 800; }
+  .dashboard-recent-time { flex: 0 0 auto; color: #8a94a6; font-size: 11px; }
 
   .antigravity-button {
     @apply px-6 py-2.5 rounded-xl font-semibold text-white
@@ -923,7 +940,11 @@ body {
 :root.theme-dark .dashboard-upcoming-item .text-gray-800 { color: #f8f9fa; }
 :root.theme-dark .dashboard-week-day.today,
 :root.theme-dark .dashboard-agenda-item.today { background: rgba(var(--primary-900), 0.45); border-color: rgb(var(--primary-400)); }
+:root.theme-dark .dashboard-week-day.selected { background: rgba(var(--primary-800), 0.58); border-color: rgb(var(--primary-400)); }
 :root.theme-dark .dashboard-agenda-date { border-color: rgba(255, 255, 255, 0.12); }
+:root.theme-dark .dashboard-recent-item { border-color: rgba(255, 255, 255, 0.1); }
+:root.theme-dark .dashboard-recent-item:hover { background: rgba(var(--primary-900), 0.35); }
+:root.theme-dark .dashboard-recent-item .text-gray-800 { color: #f8f9fa; }
 
 :root.theme-dark .glass-panel {
   background: rgba(31, 37, 45, 0.78);
