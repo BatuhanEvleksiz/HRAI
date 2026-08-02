@@ -140,8 +140,8 @@ function MatchResults({ response }) {
   </section>;
 }
 
-export default function JobPostings() {
-  const [tab, setTab] = useState('list');
+export default function JobPostings({ defaultTab = 'list' }) {
+  const [tab, setTab] = useState(defaultTab);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -155,6 +155,10 @@ export default function JobPostings() {
   const [candidateSearch, setCandidateSearch] = useState('');
   const [selectedCandidateIds, setSelectedCandidateIds] = useState([]);
   const candidates = useStore(state => state.candidates);
+
+  useEffect(() => {
+    setTab(defaultTab);
+  }, [defaultTab]);
 
   const loadJobs = async () => {
     setLoading(true);

@@ -65,6 +65,7 @@ export default function App() {
             <Route path="/analyze" element={<AnalyzeUpload />} />
             <Route path="/candidates" element={<SavedCVs />} />
             <Route path="/jobs" element={<JobPostings />} />
+            <Route path="/jobs/matching" element={<JobPostings defaultTab="match" />} />
             <Route path="/matching" element={<MatchingEngine />} />
             <Route path="/interviews" element={<Interviews />} />
             <Route path="/interviews/assistant" element={<Interviews defaultTab="assistant" />} />

@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, FileSearch, FolderOpen, Target,
-  CalendarDays, FileText, MessageCircle, Settings,
+  CalendarDays, FileText, MessageCircle, Settings, Users,
   Brain, MessageSquareText, BriefcaseBusiness
 } from 'lucide-react';
 
@@ -11,6 +11,7 @@ const menuItems = [
   { path: '/analyze', label: 'Analiz & Kayıt', icon: FileSearch },
   { path: '/candidates', label: 'Kayıtlı CV\'ler', icon: FolderOpen },
   { path: '/jobs', label: 'İş İlanları', icon: BriefcaseBusiness },
+  { path: '/jobs/matching', label: 'İlan-CV Eşleştirme', icon: Users },
   { path: '/matching', label: 'Eşleşme Motoru', icon: Target },
   { path: '/interviews', label: 'Mülakatlar', icon: CalendarDays },
   { path: '/interviews/assistant', label: 'Mülakat Asistanı', icon: MessageSquareText },
@@ -39,7 +40,7 @@ export default function Sidebar() {
           <NavLink
             key={item.path}
             to={item.path}
-            end={item.path === '/'}
+            end={item.path === '/' || item.path === '/jobs'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 isActive
