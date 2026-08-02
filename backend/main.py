@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_database_status
+from services.gemini_service import get_gemini_status
+from services.nemo_service import get_nvidia_status
 
 from routers import dashboard, cv, matching, interviews, reports, chatbot, settings
 
@@ -28,4 +30,11 @@ def read_root():
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "database": get_database_status()}
+    return {
+        "status": "ok",
+        "database": get_database_status(),
+        "cv_analysis": {
+            "nvidia": get_nvidia_status(),
+            "gemini": get_gemini_status(),
+        },
+    }

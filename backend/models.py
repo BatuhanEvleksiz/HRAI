@@ -7,28 +7,42 @@ class CandidateCreate(BaseModel):
     email: str
     phone: Optional[str] = None
     profession: Optional[str] = None
+    department: Optional[str] = None
     university: Optional[str] = None
+    location: Optional[str] = None
     experience_years: Optional[int] = 0
-    skills: List[str] = []
-    languages: List[Dict[str, str]] = [] # {language, level}
-    projects: List[Dict[str, Any]] = [] # {title, description, technologies}
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    skills: List[str] = Field(default_factory=list)
+    languages: List[Dict[str, str]] = Field(default_factory=list) # {language, level}
+    certifications: List[Dict[str, Any]] = Field(default_factory=list)
+    projects: List[Dict[str, Any]] = Field(default_factory=list) # {title, description, technologies}
     ai_summary: Optional[str] = None
     raw_cv_text: Optional[str] = None
     original_filename: Optional[str] = None
     radar_scores: Dict[str, Any] = Field(default_factory=dict)
+    analysis_meta: Dict[str, Any] = Field(default_factory=dict)
 
 class CandidateUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     profession: Optional[str] = None
+    department: Optional[str] = None
     university: Optional[str] = None
+    location: Optional[str] = None
     experience_years: Optional[int] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
     skills: Optional[List[str]] = None
     languages: Optional[List[Dict[str, str]]] = None
+    certifications: Optional[List[Dict[str, Any]]] = None
     projects: Optional[List[Dict[str, Any]]] = None
     ai_summary: Optional[str] = None
     radar_scores: Optional[Dict[str, Any]] = None
+    analysis_meta: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
 
 class CandidateResponse(CandidateCreate):

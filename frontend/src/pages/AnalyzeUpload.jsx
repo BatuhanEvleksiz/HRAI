@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { api } from '../api/api';
-import { Upload, FileText, Sparkles, Save, X, CheckCircle, Briefcase, GraduationCap, Globe, Code, FolderGit2 } from 'lucide-react';
+import { Upload, FileText, Sparkles, Save, X, CheckCircle, Briefcase, GraduationCap, Globe, Code, FolderGit2, MapPin, Link2, GitFork, ExternalLink, Award, Building2, ShieldCheck } from 'lucide-react';
 
 function capitalize(str) {
   if (!str) return '';
   return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+function safeUrl(url) {
+  if (!url) return '';
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
 export default function AnalyzeUpload() {
@@ -26,13 +31,22 @@ export default function AnalyzeUpload() {
         email: 'ahmet.yilmaz@email.com',
         phone: '+90 555 123 4567',
         profession: 'backend developer',
+        department: 'bilgisayar mühendisliği',
         university: 'odtü',
+        location: 'ankara, türkiye',
         experience_years: 4,
+        linkedin_url: 'https://linkedin.com/in/ahmetyilmaz',
+        github_url: 'https://github.com/ahmetyilmaz',
+        portfolio_url: 'https://ahmetyilmaz.dev',
         skills: ['python', 'java', 'fastapi', 'docker', 'postgresql', 'git', 'redis', 'kubernetes'],
         languages: [
           { language: 'türkçe', level: 'c2' },
           { language: 'ingilizce', level: 'b2' },
           { language: 'almanca', level: 'a2' }
+        ],
+        certifications: [
+          { name: 'AWS Certified Developer', issuer: 'Amazon Web Services', year: '2025' },
+          { name: 'Professional Scrum Master I', issuer: 'Scrum.org', year: '2024' }
         ],
         projects: [
           { title: 'e-ticaret microservices api', description: 'Yüksek trafikli e-ticaret platformu için microservices mimarisi ile API geliştirme.', technologies: ['python', 'fastapi', 'docker', 'kubernetes'] },
@@ -151,7 +165,7 @@ export default function AnalyzeUpload() {
             <div>
               <h2 className="text-xl font-bold text-gray-800">CV PDF Yükleyin</h2>
               <p className="text-sm text-gray-400 mt-2">
-                NVIDIA NeMo OCR + Gemini 1.5 Flash ile CV otomatik analiz edilir.
+                NVIDIA Nemotron Parse + Gemini 3.5 Flash ile CV otomatik analiz edilir.
               </p>
               <p className="text-sm text-gray-400">
                 Yetkinlikler, diller, projeler ve semantik özet çıkarılır.
@@ -184,7 +198,7 @@ export default function AnalyzeUpload() {
 
             {selectedFile && <p className="text-sm text-primary-600 mt-3 truncate" title={selectedFile.name}>Seçilen dosya: {selectedFile.name}</p>}
             {isAnalyzing && <div className="max-w-md mx-auto mt-4 space-y-1.5">
-              <div className="flex justify-between text-xs text-gray-500"><span>{uploadProgress < 100 ? 'PDF yükleniyor...' : 'PDF yüklendi, Gemini analiz ediyor...'}</span><span>%{uploadProgress}</span></div>
+              <div className="flex justify-between text-xs text-gray-500"><span>{uploadProgress < 100 ? 'PDF yükleniyor...' : 'NVIDIA OCR ve Gemini işliyor...'}</span><span>%{uploadProgress}</span></div>
               <div className="h-2 rounded-full bg-surface-100 overflow-hidden"><div className="h-full rounded-full bg-primary-500 transition-all duration-200" style={{ width: `${Math.max(uploadProgress, 4)}%` }} /></div>
             </div>}
 
@@ -229,6 +243,10 @@ export default function AnalyzeUpload() {
                   <Briefcase className="w-4 h-4" />
                   {capitalize(analyzedCV.profession)}
                 </p>
+                {analyzedCV.department && <p className="text-gray-400 text-sm flex items-center gap-2 mt-1">
+                  <Building2 className="w-4 h-4" />
+                  {capitalize(analyzedCV.department)}
+                </p>}
                 <p className="text-gray-400 text-sm flex items-center gap-2 mt-1">
                   <GraduationCap className="w-4 h-4" />
                   {capitalize(analyzedCV.university)} • {analyzedCV.experience_years} yıl deneyim
@@ -240,10 +258,25 @@ export default function AnalyzeUpload() {
               </div>
             </div>
 
+            {analyzedCV.analysis_meta?.pipeline_status === 'success' && (
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-success-200 bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-600">
+                  <ShieldCheck className="h-3.5 w-3.5" /> NVIDIA OCR doğrulandı
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-success-200 bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-600">
+                  <ShieldCheck className="h-3.5 w-3.5" /> Gemini 3.5 Flash doğrulandı
+                </span>
+              </div>
+            )}
+
             {/* Contact */}
-            <div className="flex gap-4 text-sm text-gray-500">
-              <span>📧 {analyzedCV.email}</span>
-              <span>📱 {analyzedCV.phone}</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
+              {analyzedCV.email && <span>📧 {analyzedCV.email}</span>}
+              {analyzedCV.phone && <span>📱 {analyzedCV.phone}</span>}
+              {analyzedCV.location && <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" />{capitalize(analyzedCV.location)}</span>}
+              {analyzedCV.linkedin_url && <a href={safeUrl(analyzedCV.linkedin_url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700"><Link2 className="h-4 w-4" />LinkedIn</a>}
+              {analyzedCV.github_url && <a href={safeUrl(analyzedCV.github_url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700"><GitFork className="h-4 w-4" />GitHub</a>}
+              {analyzedCV.portfolio_url && <a href={safeUrl(analyzedCV.portfolio_url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700"><ExternalLink className="h-4 w-4" />Portföy</a>}
             </div>
 
             {/* Skills */}
@@ -253,7 +286,7 @@ export default function AnalyzeUpload() {
                 Yetkinlikler
               </h4>
               <div className="flex flex-wrap gap-2">
-                {analyzedCV.skills.map(skill => (
+                {(analyzedCV.skills || []).map(skill => (
                   <span key={skill} className="pill pill-blue">{skill}</span>
                 ))}
               </div>
@@ -266,13 +299,27 @@ export default function AnalyzeUpload() {
                 Diller
               </h4>
               <div className="flex flex-wrap gap-2">
-                {analyzedCV.languages.map(lang => (
+                {(analyzedCV.languages || []).map(lang => (
                   <span key={lang.language} className="pill pill-purple">
-                    {capitalize(lang.language)} — {lang.level.toUpperCase()}
+                    {capitalize(lang.language)}{lang.level ? ` — ${lang.level.toUpperCase()}` : ''}
                   </span>
                 ))}
               </div>
             </div>
+
+            {(analyzedCV.certifications || []).length > 0 && <div>
+              <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <Award className="h-4 w-4 text-warning-500" /> Sertifikalar
+              </h4>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {analyzedCV.certifications.map((certificate, idx) => (
+                  <div key={`${certificate.name}-${idx}`} className="rounded-xl border border-surface-200 bg-surface-50 p-3">
+                    <p className="text-sm font-semibold text-gray-800">{certificate.name}</p>
+                    <p className="mt-1 text-xs text-gray-500">{[certificate.issuer, certificate.year].filter(Boolean).join(' • ')}</p>
+                  </div>
+                ))}
+              </div>
+            </div>}
 
             {/* Projects */}
             <div>
@@ -281,12 +328,12 @@ export default function AnalyzeUpload() {
                 Projeler
               </h4>
               <div className="space-y-3">
-                {analyzedCV.projects.map((project, idx) => (
+                {(analyzedCV.projects || []).map((project, idx) => (
                   <div key={idx} className="p-4 bg-surface-50 rounded-xl border border-surface-200">
                     <h5 className="font-semibold text-gray-800">{capitalize(project.title)}</h5>
                     <p className="text-sm text-gray-500 mt-1">{project.description}</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {project.technologies.map(tech => (
+                      {(Array.isArray(project.technologies) ? project.technologies : []).map(tech => (
                         <span key={tech} className="text-xs px-2 py-0.5 rounded-md bg-primary-50 text-primary-600 font-medium">{tech}</span>
                       ))}
                     </div>

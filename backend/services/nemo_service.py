@@ -9,36 +9,51 @@ import httpx
 from pypdf import PdfReader
 
 NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-NVIDIA_MODEL = "nvidia/nemotron-parse"
+NVIDIA_MODEL = os.getenv("NVIDIA_OCR_MODEL", "nvidia/nemotron-parse")
 
 
-def _json_blocks(content: str) -> list[dict]:
-    """Accept JSON blocks when the parser returns them, including fenced JSON."""
-    cleaned = content.strip()
+def _json_value(content: str):
+    """Accept JSON returned directly or inside a markdown fence."""
+    cleaned = (content or "").strip()
     if "```" in cleaned:
         cleaned = re.sub(r"^```(?:json)?|```$", "", cleaned.strip(), flags=re.IGNORECASE).strip()
     try:
-        value = json.loads(cleaned)
+        return json.loads(cleaned)
     except (TypeError, ValueError):
-        return []
+        return None
+
+
+def _json_blocks(value) -> list[dict]:
+    """Normalize Nemotron tool arguments into a flat list of text blocks."""
+    if isinstance(value, str):
+        value = _json_value(value)
     if isinstance(value, dict):
         value = value.get("blocks") or value.get("elements") or value.get("items") or []
+    while isinstance(value, list) and len(value) == 1 and isinstance(value[0], list):
+        value = value[0]
+    if not isinstance(value, list):
+        return []
     return [item for item in value if isinstance(item, dict) and item.get("text")]
 
 
-def _ordered_text(content: str) -> str:
+def _ordered_text(value) -> str:
     """Sort parser blocks by columns and coordinates before Gemini sees them."""
-    blocks = _json_blocks(content)
+    blocks = _json_blocks(value)
     if not blocks:
-        return content.strip()
+        return value.strip() if isinstance(value, str) else ""
 
     positioned = []
     for block in blocks:
         bbox = block.get("bbox") or block.get("bounding_box") or block.get("box")
-        if not isinstance(bbox, (list, tuple)) or len(bbox) < 2:
-            continue
         try:
-            positioned.append((float(bbox[0]), float(bbox[1]), str(block["text"]).strip()))
+            if isinstance(bbox, dict):
+                x = bbox.get("xmin", bbox.get("x", 0))
+                y = bbox.get("ymin", bbox.get("y", 0))
+            elif isinstance(bbox, (list, tuple)) and len(bbox) >= 2:
+                x, y = bbox[0], bbox[1]
+            else:
+                continue
+            positioned.append((float(x), float(y), str(block["text"]).strip()))
         except (TypeError, ValueError):
             continue
     if len(positioned) < 2:
@@ -67,52 +82,101 @@ def _selectable_pdf_text(file_bytes: bytes) -> str:
         return ""
 
 
-def extract_text_from_pdf(file_bytes: bytes) -> str:
-    """Use NVIDIA for every PDF when configured, preserving a real PDF fallback."""
+def _nemotron_blocks(message: dict) -> list[dict]:
+    tool_calls = message.get("tool_calls") or []
+    if tool_calls:
+        arguments = tool_calls[0].get("function", {}).get("arguments", "")
+        return _json_blocks(arguments)
+    return _json_blocks(message.get("content", ""))
+
+
+def extract_document_from_pdf(file_bytes: bytes, require_nvidia: bool = True) -> dict:
+    """Extract every PDF page with Nemotron Parse and retain the native text layer."""
     selectable_text = _selectable_pdf_text(file_bytes)
     api_key = (os.getenv("NVIDIA_API_KEY") or "").strip()
     if not api_key or "your_" in api_key:
-        if selectable_text:
-            return selectable_text
         raise RuntimeError("PDF OCR için NVIDIA_API_KEY gerekli.")
 
+    document = None
     try:
         document = fitz.open(stream=file_bytes, filetype="pdf")
         page_texts = []
+        page_count = min(len(document), 10)
+        scale = max(1.5, min(float(os.getenv("NVIDIA_OCR_SCALE", "2.5")), 4.0))
         for page_number, page in enumerate(document):
             if page_number >= 10:
                 break
-            pixmap = page.get_pixmap(matrix=fitz.Matrix(1.1, 1.1), alpha=False)
-            image_b64 = base64.b64encode(pixmap.tobytes("jpeg", jpg_quality=65)).decode("ascii")
-            prompt = (
-                "Read this CV page completely. Return ONLY a JSON array of objects. "
-                "Each object must contain text, bbox as [x,y,width,height], and type. "
-                "Keep every contact detail, language, education, skill and project. "
-                f'<img src="data:image/jpeg;base64,{image_b64}" />'
-            )
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
+            image_b64 = base64.b64encode(pixmap.tobytes("jpeg", jpg_quality=82)).decode("ascii")
             response = httpx.post(
                 NVIDIA_API_URL,
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
                     "model": NVIDIA_MODEL,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 8192,
+                    "tools": [{"type": "function", "function": {"name": "markdown_bbox"}}],
+                    "messages": [{
+                        "role": "user",
+                        "content": [{
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"},
+                        }],
+                    }],
                     "temperature": 0,
+                    "max_tokens": 4096,
                 },
                 timeout=60,
             )
             response.raise_for_status()
             payload = response.json()
-            content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
-            if content.strip():
-                page_texts.append(_ordered_text(content))
-        document.close()
+            message = payload.get("choices", [{}])[0].get("message", {})
+            blocks = _nemotron_blocks(message)
+            ordered_page = _ordered_text(blocks)
+            if not ordered_page:
+                raise RuntimeError(f"NVIDIA NeMo OCR {page_number + 1}. sayfada boş yanıt döndürdü.")
+            page_texts.append(ordered_page)
         nvidia_text = "\n\n".join(page_texts).strip()
         if nvidia_text:
-            return nvidia_text
-    except Exception:
-        # A real selectable PDF is still more useful than failing the whole upload.
-        if not selectable_text:
-            raise RuntimeError("NVIDIA NeMo OCR başarısız oldu ve PDF metni bulunamadı.")
+            combined_parts = ["[NVIDIA NEMOTRON PARSE]\n" + nvidia_text]
+            if selectable_text:
+                combined_parts.append("[PDF TEXT LAYER]\n" + selectable_text)
+            return {
+                "text": "\n\n".join(combined_parts),
+                "metadata": {
+                    "ocr_provider": "nvidia",
+                    "ocr_model": NVIDIA_MODEL,
+                    "ocr_status": "success",
+                    "ocr_pages": page_count,
+                    "native_text_layer": bool(selectable_text),
+                },
+            }
+        raise RuntimeError("NVIDIA NeMo OCR boş yanıt döndürdü.")
+    except Exception as exc:
+        if require_nvidia:
+            raise RuntimeError(f"NVIDIA NeMo OCR çalışmadı: {type(exc).__name__}: {exc}") from exc
+        if selectable_text:
+            return {
+                "text": selectable_text,
+                "metadata": {
+                    "ocr_provider": "pdf_text",
+                    "ocr_model": None,
+                    "ocr_status": "fallback",
+                    "ocr_pages": 0,
+                    "native_text_layer": True,
+                },
+            }
+        raise RuntimeError("NVIDIA NeMo OCR başarısız oldu ve PDF metni bulunamadı.") from exc
+    finally:
+        if document is not None:
+            document.close()
 
-    return selectable_text
+
+def extract_text_from_pdf(file_bytes: bytes) -> str:
+    return extract_document_from_pdf(file_bytes)["text"]
+
+
+def get_nvidia_status() -> dict:
+    api_key = (os.getenv("NVIDIA_API_KEY") or "").strip()
+    return {
+        "configured": bool(api_key and "your_" not in api_key),
+        "model": NVIDIA_MODEL,
+    }

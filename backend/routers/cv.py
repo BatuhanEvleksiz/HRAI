@@ -1,8 +1,7 @@
 import asyncio
-import re
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from models import CandidateCreate, CandidateUpdate, CandidateResponse
-from services.nemo_service import extract_text_from_pdf
+from services.nemo_service import extract_document_from_pdf
 from services.gemini_service import analyze_cv
 from database import get_supabase
 import uuid
@@ -38,58 +37,22 @@ def build_candidate_radar(candidate: dict) -> dict:
         "technical_depth": technical_depth,
     }
 
-def fallback_cv_analysis(text: str, filename: str | None) -> dict:
-    """Return a useful local result when the optional Gemini call times out."""
-    email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", text)
-    phone_match = re.search(r"(?:\+90|0)?\s*5\d{2}\s*\d{3}\s*\d{2}\s*\d{2}", text)
-    known_skills = [
-        skill for skill in [
-            "python", "java", "javascript", "typescript", "react", "sql", "fastapi", "docker", "aws", "git",
-            "embedded c", "c++", "assembly", "stm32", "esp32", "freertos", "spi", "i2c", "uart", "can bus",
-            "modbus", "kicad", "mqtt", "esp-idf", "usb hid", "stm32cubeide",
-            "sap2000", "etabs", "sta4cad", "idecad", "robot structural", "tbdy 2018", "ts500",
-            "eurocode 2/3", "aisc 360", "revit structure", "autocad", "tekla structures", "navisworks",
-        ] if skill in text.lower()
-    ]
-    profession_match = re.search(r"^([^|\n]+(?:Mühendisi|Developer|Engineer))", text, re.IGNORECASE | re.MULTILINE)
-    university_match = re.search(r"(?:Lisans|Üniversite).*?[—-]\s*([^|\n]+)", text, re.IGNORECASE)
-    first_line = next((line.strip() for line in text.splitlines() if line.strip()), "PDF adayı")
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
-    name_match = next(
-        (line for line in lines if re.fullmatch(r"[A-ZÇĞİÖŞÜ][A-Za-zÇĞİÖŞÜçğıöşü'-]+(?:\s+[A-ZÇĞİÖŞÜ][A-Za-zÇĞİÖŞÜçğıöşü'-]+){1,3}", line)),
-        first_line,
-    )
-    university_fallback = next((line for line in lines if "Üniversitesi" in line or "Ãœniversitesi" in line), "")
-    detected_languages = [
-        {"language": language, "level": ""}
-        for language in ["türkçe", "ingilizce", "almanca"]
-        if language in text.lower()
-    ]
-    return {
-        "full_name": name_match[:255],
-        "email": email_match.group(0) if email_match else "",
-        "phone": phone_match.group(0) if phone_match else "",
-        "profession": profession_match.group(1).strip() if profession_match else "",
-        "university": university_match.group(1).strip() if university_match else university_fallback,
-        "experience_years": 0,
-        "skills": known_skills,
-        "languages": detected_languages,
-        "projects": [],
-        "ai_summary": "Gemini yanıtı zaman aşımına uğradı. PDF metni çıkarıldı; aday bilgilerini gözden geçirip düzenleyebilirsiniz.",
-        "raw_cv_text": text,
-        "original_filename": filename,
-    }
-
 demo_candidate = {
     "id": str(uuid.uuid4()),
     "full_name": "ahmet yılmaz",
     "email": "ahmet@example.com",
     "phone": "05321234567",
     "profession": "backend developer",
+    "department": "bilgisayar mühendisliği",
     "university": "odtü",
+    "location": "ankara, türkiye",
     "experience_years": 4,
+    "linkedin_url": "https://linkedin.com/in/ahmetyilmaz",
+    "github_url": "https://github.com/ahmetyilmaz",
+    "portfolio_url": "",
     "skills": ["python", "java", "fastapi", "docker", "postgresql", "git", "redis", "kubernetes"],
     "languages": [{"language": "türkçe", "level": "c2"}, {"language": "ingilizce", "level": "b2"}, {"language": "almanca", "level": "a2"}],
+    "certifications": [{"name": "aws certified developer", "issuer": "aws", "year": "2025"}],
     "projects": [
         {"title": "e-commerce microservices", "description": "built with fastapi", "technologies": "python, docker"},
         {"title": "cloud monitoring", "description": "aws monitoring", "technologies": "python, aws"},
@@ -108,25 +71,27 @@ async def upload_cv(file: UploadFile = File(...)):
     filename = file.filename
     file_bytes = await file.read()
     try:
-        text = await asyncio.wait_for(
-            asyncio.to_thread(extract_text_from_pdf, file_bytes),
+        document = await asyncio.wait_for(
+            asyncio.to_thread(extract_document_from_pdf, file_bytes, True),
             timeout=180,
         )
     except asyncio.TimeoutError:
-        text = "PDF metni zamanında çıkarılamadı."
+        raise HTTPException(status_code=504, detail="NVIDIA NeMo OCR 180 saniyede tamamlanamadı.")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    text = document.get("text", "")
     if not text:
         raise HTTPException(status_code=422, detail="PDF'den okunabilir metin çıkarılamadı.")
 
     try:
-        data = await asyncio.wait_for(asyncio.to_thread(analyze_cv, text), timeout=45)
+        data = await asyncio.wait_for(asyncio.to_thread(analyze_cv, text), timeout=90)
     except asyncio.TimeoutError:
-        data = fallback_cv_analysis(text, filename)
-    except Exception:
-        data = fallback_cv_analysis(text, filename)
-    if data.get("error") or data.get("full_name") == "Demo Name":
-        data = fallback_cv_analysis(text, filename)
+        raise HTTPException(status_code=504, detail="Gemini CV analizi 90 saniyede tamamlanamadı.")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    analysis_meta = {**document.get("metadata", {}), **data.get("analysis_meta", {})}
+    analysis_meta["pipeline_status"] = "success"
+    data["analysis_meta"] = analysis_meta
     data["raw_cv_text"] = text
     data["original_filename"] = filename
     return data
@@ -145,14 +110,26 @@ def save_candidate(candidate: CandidateCreate):
             ]
         elif technologies is None:
             project["technologies"] = []
-    for key, val in c_dict.items():
-        if isinstance(val, str):
-            c_dict[key] = val.lower()
-        elif isinstance(val, list):
-            if val and isinstance(val[0], str):
-                c_dict[key] = [v.lower() for v in val]
-            elif val and isinstance(val[0], dict):
-                c_dict[key] = [{k: v.lower() if isinstance(v, str) else v for k, v in item.items()} for item in val]
+    for key in ("full_name", "email", "profession", "department", "university", "location"):
+        if isinstance(c_dict.get(key), str):
+            c_dict[key] = c_dict[key].lower()
+    c_dict["skills"] = [str(value).lower() for value in c_dict.get("skills") or []]
+    c_dict["languages"] = [
+        {
+            **item,
+            "language": str(item.get("language", "")).lower(),
+            "level": str(item.get("level", "")).lower(),
+        }
+        for item in c_dict.get("languages") or []
+    ]
+    c_dict["projects"] = [
+        {
+            **item,
+            "title": str(item.get("title", "")).lower(),
+            "technologies": [str(value).lower() for value in item.get("technologies") or []],
+        }
+        for item in c_dict.get("projects") or []
+    ]
 
     supabase = get_supabase()
     if supabase:

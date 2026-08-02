@@ -11,29 +11,102 @@ api_key = os.getenv("GEMINI_API_KEY")
 if api_key and "your_" not in api_key:
     genai.configure(api_key=api_key)
 
+CV_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "full_name": {"type": "string"},
+        "email": {"type": "string"},
+        "phone": {"type": "string"},
+        "profession": {"type": "string"},
+        "department": {"type": "string"},
+        "university": {"type": "string"},
+        "location": {"type": "string"},
+        "experience_years": {"type": "integer"},
+        "linkedin_url": {"type": "string"},
+        "github_url": {"type": "string"},
+        "portfolio_url": {"type": "string"},
+        "skills": {"type": "array", "items": {"type": "string"}},
+        "languages": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"language": {"type": "string"}, "level": {"type": "string"}},
+                "required": ["language", "level"],
+            },
+        },
+        "certifications": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "issuer": {"type": "string"},
+                    "year": {"type": "string"},
+                },
+                "required": ["name", "issuer", "year"],
+            },
+        },
+        "projects": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "description": {"type": "string"},
+                    "technologies": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["title", "description", "technologies"],
+            },
+        },
+        "ai_summary": {"type": "string"},
+    },
+    "required": [
+        "full_name", "email", "phone", "profession", "department", "university",
+        "location", "experience_years", "linkedin_url", "github_url", "portfolio_url",
+        "skills", "languages", "certifications", "projects", "ai_summary",
+    ],
+}
+
+
 def analyze_cv(text: str) -> dict:
     if not api_key or "your_" in api_key:
-        return {
-            "full_name": "Demo Name",
-            "email": "demo@example.com",
-            "phone": "1234567890",
-            "profession": "Demo Profession",
-            "skills": ["demo skill"],
-            "languages": [{"language": "english", "level": "b2"}],
-            "projects": [],
-            "ai_summary": "Demo summary"
-        }
+        raise RuntimeError("CV analizi için GEMINI_API_KEY gerekli.")
     
     try:
         model = genai.GenerativeModel(GEMINI_MODEL)
-        prompt = f"Extract structured data from the following CV. Return JSON with full_name, email, phone, profession, university, experience_years, skills (list of str), languages (list of dict with language, level), projects (list of dict with title, description, technologies), ai_summary.\n\n{text}"
-        res = model.generate_content(prompt)
-        text_res = res.text
-        if "```json" in text_res:
-            text_res = text_res.split("```json")[1].split("```")[0]
-        return json.loads(text_res.strip())
-    except Exception:
-        return {"error": "Failed to analyze CV"}
+        prompt = (
+            "Aşağıdaki CV OCR çıktısını yapılandırılmış aday profiline dönüştür. "
+            "NVIDIA OCR ve PDF metin katmanında tekrar eden bilgileri tekilleştir. "
+            "CV'de açıkça bulunmayan hiçbir isim, bağlantı, sertifika, dil seviyesi veya deneyim uydurma. "
+            "department alanı adayın eğitim bölümü/uzmanlık alanıdır; profession mevcut veya hedef iş unvanıdır. "
+            "experience_years toplam profesyonel deneyimin tam yıl karşılığıdır. "
+            "LinkedIn, GitHub ve portföy bağlantılarını tam URL olarak koru. Eksik alanlarda boş string veya boş liste kullan.\n\n"
+            f"{text}"
+        )
+        res = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0,
+                "response_mime_type": "application/json",
+                "response_schema": CV_RESPONSE_SCHEMA,
+            },
+        )
+        data = json.loads(res.text.strip())
+        data["analysis_meta"] = {
+            "llm_provider": "google",
+            "llm_model": GEMINI_MODEL,
+            "llm_status": "success",
+        }
+        return data
+    except Exception as exc:
+        raise RuntimeError(f"Gemini CV analizi çalışmadı: {type(exc).__name__}: {exc}") from exc
+
+
+def get_gemini_status() -> dict:
+    return {
+        "configured": bool(api_key and "your_" not in api_key),
+        "model": GEMINI_MODEL,
+    }
 
 def generate_match_comment(candidate: dict, requirements: dict, score: float) -> str:
     if not api_key or "your_" in api_key:

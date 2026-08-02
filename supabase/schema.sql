@@ -41,9 +41,18 @@ CREATE TABLE candidates (
     
     -- Meslek / Pozisyon (lowercase)
     profession VARCHAR(255),
+
+    -- Eğitim bölümü / uzmanlık alanı
+    department VARCHAR(255),
     
     -- Üniversite (lowercase)
     university VARCHAR(255),
+
+    -- Konum ve profesyonel bağlantılar
+    location VARCHAR(255),
+    linkedin_url TEXT,
+    github_url TEXT,
+    portfolio_url TEXT,
     
     -- Deneyim yılı
     experience_years INTEGER DEFAULT 0,
@@ -54,6 +63,9 @@ CREATE TABLE candidates (
     
     -- languages: [{"language": "ingilizce", "level": "b2"}, {"language": "almanca", "level": "a2"}]
     languages JSONB DEFAULT '[]'::jsonb,
+
+    -- certifications: [{"name": "...", "issuer": "...", "year": "2025"}]
+    certifications JSONB DEFAULT '[]'::jsonb,
     
     -- projects: [{"title": "e-commerce api", "description": "...", "technologies": ["python", "fastapi"]}]
     projects JSONB DEFAULT '[]'::jsonb,
@@ -69,6 +81,9 @@ CREATE TABLE candidates (
 
     -- Aday kartında gösterilen 6 eksenli kalıcı radar skorları
     radar_scores JSONB NOT NULL DEFAULT '{}'::jsonb,
+
+    -- Gerçek OCR/LLM hattının sağlayıcı, model ve çalışma durumu
+    analysis_meta JSONB NOT NULL DEFAULT '{}'::jsonb,
     
     -- Durum: pending (onay bekleyen), approved (onaylanan), rejected (reddedilen)
     status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
