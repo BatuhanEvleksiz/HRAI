@@ -276,6 +276,9 @@
 .theme-dark .mode-segment { border-color: #495057; background: #212529; }
 .theme-dark .mode-segment button.active { background: #495057; color: #f8f9fa; }
 .theme-dark .job-input, .theme-dark .tag-editor input { color: #f8f9fa; }
+.theme-dark .job-result-card .score-caption { color: #adb5bd; }
+.theme-dark .job-result-card .score-value { color: #f8f9fa; }
+.theme-dark .job-result-card .score-value.text-primary-600 { color: #ffffff !important; }
 
 @media (max-width: 900px) {
   .batch-upload-zone, .match-job-band { align-items: stretch; flex-direction: column; }
