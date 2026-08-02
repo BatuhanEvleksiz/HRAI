@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../api/api';
 import { useStore } from '../store/useStore';
 import {
@@ -460,6 +460,11 @@ export default function Interviews({ defaultTab = 'schedule' }) {
   const [newInterview, setNewInterview] = useState({
     candidate_id: '', candidate_name: '', position: '', interview_date: '', interview_time: '', notes: ''
   });
+
+  useEffect(() => {
+    setActiveTab(defaultTab);
+    if (defaultTab === 'assistant') setShowNewForm(false);
+  }, [defaultTab]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
