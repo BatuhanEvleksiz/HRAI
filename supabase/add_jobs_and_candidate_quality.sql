@@ -1,5 +1,13 @@
 -- Run once in Supabase SQL Editor for internal job posting and matching flows.
 ALTER TABLE public.candidates
+  ADD COLUMN IF NOT EXISTS department TEXT,
+  ADD COLUMN IF NOT EXISTS location TEXT,
+  ADD COLUMN IF NOT EXISTS linkedin_url TEXT,
+  ADD COLUMN IF NOT EXISTS github_url TEXT,
+  ADD COLUMN IF NOT EXISTS portfolio_url TEXT,
+  ADD COLUMN IF NOT EXISTS certifications JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS radar_scores JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS analysis_meta JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS quality_score NUMERIC(5,2),
   ADD COLUMN IF NOT EXISTS quality_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS source_fingerprint TEXT;
