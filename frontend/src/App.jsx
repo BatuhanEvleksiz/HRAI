@@ -19,23 +19,43 @@ export default function App() {
   const setInterviews = useStore(state => state.setInterviews);
   const setReports = useStore(state => state.setReports);
   const setWeights = useStore(state => state.setWeights);
+  const hasCachedData = () => ['candidates', 'interviews', 'reports', 'weights']
+    .some(key => Boolean(localStorage.getItem(`ikai-cache-${key}`)));
+  const [isHydrating, setIsHydrating] = useState(() => !hasCachedData());
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('ikai-color-mode') === 'dark');
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-pink', localStorage.getItem('ikai-theme') === 'pink');
-    api.getCandidates()
-      .then(data => Array.isArray(data) && setCandidates(data))
-      .catch(() => {});
-    api.getInterviews()
-      .then(data => Array.isArray(data) && setInterviews(data))
-      .catch(() => {});
-    api.getReports()
-      .then(data => Array.isArray(data) && setReports(data))
-      .catch(() => {});
-    api.getWeights()
-      .then(data => data && setWeights(data))
-      .catch(() => {});
+    const load = async () => {
+      const [candidateResult, interviewResult, reportResult, weightResult] = await Promise.allSettled([
+        api.getCandidates(), api.getInterviews(), api.getReports(), api.getWeights(),
+      ]);
+
+      const applyCache = (key, result, setter, isValid) => {
+        if (result.status !== 'fulfilled' || !isValid(result.value)) return;
+        setter(result.value);
+        localStorage.setItem(`ikai-cache-${key}`, JSON.stringify(result.value));
+      };
+
+      applyCache('candidates', candidateResult, setCandidates, Array.isArray);
+      applyCache('interviews', interviewResult, setInterviews, Array.isArray);
+      applyCache('reports', reportResult, setReports, Array.isArray);
+      applyCache('weights', weightResult, setWeights, value => value && typeof value === 'object');
+      setIsHydrating(false);
+    };
+    load();
   }, [setCandidates, setInterviews, setReports, setWeights]);
+
+  if (isHydrating) {
+    return (
+      <div className="min-h-screen bg-surface-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-3 h-9 w-9 animate-spin rounded-full border-4 border-primary-100 border-t-primary-500" />
+          <p className="text-sm font-medium text-gray-500">Kayıtlı veriler yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-dark', darkMode);

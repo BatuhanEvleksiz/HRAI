@@ -190,9 +190,19 @@ const DEMO_REPORTS = [
   }
 ];
 
+function readCachedValue(key, fallback) {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const value = JSON.parse(window.localStorage.getItem(key) || 'null');
+    return value ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export const useStore = create((set, get) => ({
   // Candidates
-  candidates: DEMO_CANDIDATES,
+  candidates: readCachedValue('ikai-cache-candidates', DEMO_CANDIDATES),
   setCandidates: (candidates) => set({ candidates }),
   addCandidate: (candidate) => set((state) => ({
     candidates: [...state.candidates, {
@@ -209,7 +219,7 @@ export const useStore = create((set, get) => ({
   deleteCandidate: (id) => set((state) => ({ candidates: state.candidates.filter(c => c.id !== id) })),
 
   // Interviews
-  interviews: DEMO_INTERVIEWS,
+  interviews: readCachedValue('ikai-cache-interviews', DEMO_INTERVIEWS),
   setInterviews: (interviews) => set({ interviews }),
   addInterview: (interview) => set((state) => ({
     interviews: [...state.interviews, { ...interview, id: interview.id || String(state.interviews.length + 1) }]
@@ -223,7 +233,7 @@ export const useStore = create((set, get) => ({
   })),
 
   // Reports
-  reports: DEMO_REPORTS,
+  reports: readCachedValue('ikai-cache-reports', DEMO_REPORTS),
   setReports: (reports) => set({ reports }),
   addReport: (report) => set((state) => ({
     reports: [...state.reports, {
@@ -238,13 +248,13 @@ export const useStore = create((set, get) => ({
   deleteReport: (id) => set((state) => ({ reports: state.reports.filter(r => r.id !== id) })),
 
   // Scoring Weights
-  weights: {
+  weights: readCachedValue('ikai-cache-weights', {
     skill_weight: 40,
     project_weight: 20,
     llm_summary_weight: 20,
     university_weight: 10,
     language_weight: 10,
-  },
+  }),
   setWeights: (weights) => set({ weights }),
 
   // Chat
