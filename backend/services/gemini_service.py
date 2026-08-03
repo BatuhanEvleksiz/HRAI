@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_INPUT_LIMIT = int(os.getenv("GEMINI_CV_INPUT_LIMIT", "60000"))
 GEMINI_REQUEST_TIMEOUT = float(os.getenv("GEMINI_REQUEST_TIMEOUT", "70"))
 GEMINI_RETRY_TIMEOUT = float(os.getenv("GEMINI_RETRY_TIMEOUT", "150"))
