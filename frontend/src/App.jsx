@@ -16,6 +16,7 @@ import JobPostings from './pages/JobPostings';
 
 export default function App() {
   const setCandidates = useStore(state => state.setCandidates);
+  const setInterviews = useStore(state => state.setInterviews);
   const setReports = useStore(state => state.setReports);
   const setWeights = useStore(state => state.setWeights);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('ikai-color-mode') === 'dark');
@@ -25,13 +26,16 @@ export default function App() {
     api.getCandidates()
       .then(data => Array.isArray(data) && setCandidates(data))
       .catch(() => {});
+    api.getInterviews()
+      .then(data => Array.isArray(data) && setInterviews(data))
+      .catch(() => {});
     api.getReports()
       .then(data => Array.isArray(data) && setReports(data))
       .catch(() => {});
     api.getWeights()
       .then(data => data && setWeights(data))
       .catch(() => {});
-  }, [setCandidates, setReports, setWeights]);
+  }, [setCandidates, setInterviews, setReports, setWeights]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-dark', darkMode);

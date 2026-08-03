@@ -69,6 +69,9 @@ class InterviewUpdate(BaseModel):
     is_completed: Optional[bool] = None
     notes: Optional[str] = None
 
+class InterviewStatusUpdate(BaseModel):
+    status: str
+
 class InterviewResponse(InterviewCreate):
     id: str
     status: str = "scheduled"

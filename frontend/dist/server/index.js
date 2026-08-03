@@ -3,7 +3,7 @@ export default {
     const response = await env.ASSETS.fetch(request);
     if (response.status !== 404) return response;
 
-    const fallback = new Request(new URL('/index.html', request.url), request);
+    const fallback = new Request(new URL('/index.html', request.url));
     return env.ASSETS.fetch(fallback);
   },
 };

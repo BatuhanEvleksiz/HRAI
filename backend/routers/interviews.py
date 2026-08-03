@@ -1,6 +1,6 @@
 import asyncio
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from models import InterviewCreate, InterviewUpdate, InterviewAnalysisRequest, InterviewAnalysisCreate
+from models import InterviewCreate, InterviewUpdate, InterviewStatusUpdate, InterviewAnalysisRequest, InterviewAnalysisCreate
 from database import get_supabase
 from services.gemini_service import analyze_interview
 from services.interview_service import transcribe_audio
@@ -168,11 +168,20 @@ def create_interview(interview: InterviewCreate):
     supabase = get_supabase()
     if supabase:
         try:
-            res = supabase.table("interviews").insert(interview.dict()).execute()
-            return res.data[0]
-        except Exception:
-            pass
-    return {**interview.dict(), "id": str(uuid.uuid4()), "status": "scheduled", "is_completed": False, "candidate_name": "Demo Name"}
+            payload = {**interview.dict(), "status": "pending", "is_completed": None}
+            res = supabase.table("interviews").insert(payload).execute()
+            if res.data:
+                return _normalize_interview(res.data[0])
+            raise HTTPException(status_code=502, detail="Mülakat veritabanına eklenemedi.")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Mülakat kaydedilemedi: {exc}")
+    raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; mülakat sahte olarak kaydedilmedi.")
+
+def _normalize_interview(item):
+    candidate = item.get("candidates") or {}
+    return {**item, "candidate_name": item.get("candidate_name") or candidate.get("full_name") or ""}
 
 @router.get("/")
 def list_interviews():
@@ -180,9 +189,9 @@ def list_interviews():
     if supabase:
         try:
             res = supabase.table("interviews").select("*, candidates(full_name)").execute()
-            return res.data
-        except Exception:
-            pass
+            return [_normalize_interview(item) for item in (res.data or [])]
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Mülakatlar alınamadı: {exc}")
     return demo_interviews
 
 @router.put("/{id}")
@@ -191,10 +200,10 @@ def update_interview(id: str, interview: InterviewUpdate):
     if supabase:
         try:
             res = supabase.table("interviews").update(interview.dict(exclude_unset=True)).eq("id", id).execute()
-            return res.data[0] if res.data else None
-        except Exception:
-            pass
-    return {"message": "Updated"}
+            return _normalize_interview(res.data[0]) if res.data else None
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Mülakat güncellenemedi: {exc}")
+    raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; mülakat güncellenmedi.")
 
 @router.delete("/{id}")
 def delete_interview(id: str):
@@ -202,16 +211,23 @@ def delete_interview(id: str):
     if supabase:
         try:
             supabase.table("interviews").delete().eq("id", id).execute()
-        except Exception:
-            pass
-    return {"message": "Deleted"}
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Mülakat silinemedi: {exc}")
+    raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; mülakat silinmedi.")
 
 @router.put("/{id}/status")
-def update_interview_status(id: str, status: str):
+def update_interview_status(id: str, update: InterviewStatusUpdate):
+    if update.status not in {"pending", "approved", "rejected"}:
+        raise HTTPException(status_code=422, detail="Geçersiz mülakat durumu.")
     supabase = get_supabase()
     if supabase:
         try:
-            supabase.table("interviews").update({"status": status}).eq("id", id).execute()
-        except Exception:
-            pass
-    return {"message": "Status updated"}
+            result = supabase.table("interviews").update({"status": update.status}).eq("id", id).execute()
+            if not result.data:
+                raise HTTPException(status_code=404, detail="Mülakat bulunamadı.")
+            return _normalize_interview(result.data[0])
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Mülakat durumu kaydedilemedi: {exc}")
+    raise HTTPException(status_code=503, detail="Supabase bağlantısı yok; mülakat durumu kaydedilmedi.")

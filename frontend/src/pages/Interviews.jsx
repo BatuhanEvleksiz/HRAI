@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../api/api';
 import { useStore } from '../store/useStore';
 import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay,
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, useDroppable, DragOverlay,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -131,9 +131,10 @@ function InterviewCard({ interview, onToggleComplete, onDelete, onAddNote }) {
 function KanbanColumn({ status, interviews, onToggleComplete, onDelete, onAddNote }) {
   const config = columnConfig[status];
   const items = interviews.filter(i => i.status === status);
+  const { setNodeRef, isOver } = useDroppable({ id: `column:${status}` });
 
   return (
-    <div className={`kanban-column ${config.color} ${config.bg}`}>
+    <div ref={setNodeRef} className={`kanban-column ${config.color} ${config.bg} ${isOver ? 'ring-2 ring-primary-300' : ''}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className={`w-2.5 h-2.5 rounded-full ${config.dotColor}`} />
@@ -457,6 +458,10 @@ export default function Interviews({ defaultTab = 'schedule' }) {
   const { interviews, candidates, addInterview, updateInterview, moveInterview, deleteInterview } = useStore();
   const [showNewForm, setShowNewForm] = useState(false);
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const dragTargetStatus = useRef(null);
+  const dragStartStatus = useRef(null);
   const [newInterview, setNewInterview] = useState({
     candidate_id: '', candidate_name: '', position: '', interview_date: '', interview_time: '', notes: ''
   });
@@ -470,18 +475,35 @@ export default function Interviews({ defaultTab = 'schedule' }) {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  const handleDragEnd = (event) => {
+  const getDropStatus = (overId) => {
+    if (!overId) return null;
+    const value = String(overId);
+    if (value.startsWith('column:')) return value.slice('column:'.length);
+    return interviews.find(i => i.id === overId)?.status || null;
+  };
+
+  const handleDragStart = ({ active }) => {
+    const status = interviews.find(i => i.id === active.id)?.status || null;
+    dragStartStatus.current = status;
+    dragTargetStatus.current = status;
+  };
+
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
-    if (!over) return;
-
-    // Find which column the item was dropped in
     const activeInterview = interviews.find(i => i.id === active.id);
-    if (!activeInterview) return;
+    const targetStatus = getDropStatus(over?.id) || dragTargetStatus.current;
+    const startStatus = dragStartStatus.current;
+    dragTargetStatus.current = null;
+    dragStartStatus.current = null;
+    if (!activeInterview || !targetStatus || !columnConfig[targetStatus]) return;
+    if (startStatus === targetStatus) return;
 
-    // Check if dropped over another item
-    const overInterview = interviews.find(i => i.id === over.id);
-    if (overInterview && overInterview.status !== activeInterview.status) {
-      moveInterview(active.id, overInterview.status);
+    moveInterview(active.id, targetStatus);
+    try {
+      await api.updateInterviewStatus(active.id, targetStatus);
+    } catch (saveError) {
+      moveInterview(active.id, startStatus);
+      setError(`Mülakat durumu kaydedilemedi: ${saveError.message}`);
     }
   };
 
@@ -490,31 +512,65 @@ export default function Interviews({ defaultTab = 'schedule' }) {
     if (!over) return;
 
     const activeInterview = interviews.find(i => i.id === active.id);
-    const overInterview = interviews.find(i => i.id === over.id);
-
-    if (overInterview && activeInterview && overInterview.status !== activeInterview.status) {
-      moveInterview(active.id, overInterview.status);
+    const targetStatus = getDropStatus(over.id);
+    if (targetStatus && activeInterview && targetStatus !== activeInterview.status) {
+      dragTargetStatus.current = targetStatus;
+      moveInterview(active.id, targetStatus);
     }
   };
 
-  const handleToggleComplete = (id, completed) => {
+  const handleToggleComplete = async (id, completed) => {
     const interview = interviews.find(i => i.id === id);
-    updateInterview(id, { is_completed: interview.is_completed === completed ? null : completed });
+    const data = { is_completed: interview.is_completed === completed ? null : completed };
+    updateInterview(id, data);
+    try {
+      await api.updateInterview(id, data);
+    } catch (saveError) {
+      setError(`Mülakat durumu kaydedilemedi: ${saveError.message}`);
+    }
   };
 
-  const handleAddNote = (id, notes) => {
+  const handleAddNote = async (id, notes) => {
     updateInterview(id, { notes });
+    try {
+      await api.updateInterview(id, { notes });
+    } catch (saveError) {
+      setError(`Not kaydedilemedi: ${saveError.message}`);
+    }
   };
 
-  const handleCreateInterview = () => {
+  const handleDelete = async (id) => {
+    try {
+      await api.deleteInterview(id);
+      deleteInterview(id);
+    } catch (saveError) {
+      setError(`Mülakat silinemedi: ${saveError.message}`);
+    }
+  };
+
+  const handleCreateInterview = async () => {
+    if (!newInterview.candidate_id) {
+      setError('Lütfen kayıtlı aday listesinden bir aday seçin.');
+      return;
+    }
     if (newInterview.candidate_name && newInterview.interview_date && newInterview.interview_time) {
-      addInterview({
+      setIsSaving(true);
+      setError('');
+      const payload = {
         ...newInterview,
         status: 'pending',
         is_completed: null,
-      });
-      setNewInterview({ candidate_id: '', candidate_name: '', position: '', interview_date: '', interview_time: '', notes: '' });
-      setShowNewForm(false);
+      };
+      try {
+        const savedInterview = await api.createInterview(payload);
+        addInterview({ ...payload, ...savedInterview, candidate_name: savedInterview.candidate_name || payload.candidate_name });
+        setNewInterview({ candidate_id: '', candidate_name: '', position: '', interview_date: '', interview_time: '', notes: '' });
+        setShowNewForm(false);
+      } catch (saveError) {
+        setError(`Mülakat kaydedilemedi: ${saveError.message}`);
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -532,6 +588,7 @@ export default function Interviews({ defaultTab = 'schedule' }) {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {error && <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">{error}</div>}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -612,7 +669,7 @@ export default function Interviews({ defaultTab = 'schedule' }) {
             </div>
           </div>
           <div className="flex gap-3">
-            <button onClick={handleCreateInterview} className="antigravity-button">Oluştur</button>
+            <button onClick={handleCreateInterview} disabled={isSaving} className="antigravity-button disabled:opacity-60">{isSaving ? 'Kaydediliyor...' : 'Oluştur'}</button>
             <button onClick={() => setShowNewForm(false)} className="px-5 py-2.5 rounded-xl text-sm text-gray-500 hover:bg-surface-100">İptal</button>
           </div>
         </div>
@@ -622,6 +679,7 @@ export default function Interviews({ defaultTab = 'schedule' }) {
       {activeTab === 'schedule' && <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragOver={handleDragOver}
       >
@@ -632,7 +690,7 @@ export default function Interviews({ defaultTab = 'schedule' }) {
               status={status}
               interviews={interviews}
               onToggleComplete={handleToggleComplete}
-              onDelete={deleteInterview}
+              onDelete={handleDelete}
               onAddNote={handleAddNote}
             />
           ))}

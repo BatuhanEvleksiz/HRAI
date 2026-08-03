@@ -212,7 +212,7 @@ export const useStore = create((set, get) => ({
   interviews: DEMO_INTERVIEWS,
   setInterviews: (interviews) => set({ interviews }),
   addInterview: (interview) => set((state) => ({
-    interviews: [...state.interviews, { ...interview, id: String(state.interviews.length + 1) }]
+    interviews: [...state.interviews, { ...interview, id: interview.id || String(state.interviews.length + 1) }]
   })),
   updateInterview: (id, data) => set((state) => ({
     interviews: state.interviews.map(i => i.id === id ? { ...i, ...data } : i)
