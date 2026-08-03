@@ -29,7 +29,7 @@ async def transcribe_audio(file_bytes: bytes, filename: str) -> str:
             try:
                 mime_type = mimetypes.guess_type(filename)[0] or "audio/mpeg"
                 remote_file = genai.upload_file(path=temp_path, mime_type=mime_type)
-                model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+                model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"))
                 result = model.generate_content([
                     remote_file,
                     "Transcribe this Turkish job interview completely. Return plain text only. Start every turn with exactly [INTERVIEWER] or [CANDIDATE]. Do not summarize or omit words. If the speaker role is uncertain, use [SPEAKER 1] or [SPEAKER 2] instead of guessing.",
@@ -68,7 +68,7 @@ def _transcribe_with_gemini(file_bytes: bytes, filename: str) -> str:
         try:
             mime_type = mimetypes.guess_type(filename)[0] or "audio/mpeg"
             remote_file = genai.upload_file(path=temp_path, mime_type=mime_type)
-            model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+            model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"))
             result = model.generate_content([
                 remote_file,
                 "Transcribe this Turkish job interview completely. Return plain text only. Start every turn with exactly [INTERVIEWER] or [CANDIDATE]. Do not summarize or omit words. If the speaker role is uncertain, use [SPEAKER 1] or [SPEAKER 2] instead of guessing.",
