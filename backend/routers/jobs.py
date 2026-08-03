@@ -194,7 +194,9 @@ def match_job(job_id: str, request: JobMatchRequest):
             }
             for item in ranked
         ]
-        report = client.table("reports").insert({
+        report = None
+        if False:
+            report = client.table("reports").insert({
             "title": f"{job['title']} - İlan Aday Eşleştirme Raporu",
             "position": job["title"],
             "filter_criteria": {"job_id": job_id, "job": job, "run_id": run["id"]},

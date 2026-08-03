@@ -125,9 +125,42 @@ function JobForm({ initialJob, onCancel, onSaved }) {
 }
 
 function MatchResults({ response }) {
+  const [savingReport, setSavingReport] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   if (!response?.results?.length) return null;
+  const saveReport = async () => {
+    setSavingReport(true);
+    setSaveMessage('');
+    try {
+      const matchedCandidates = response.results.map(item => ({
+        candidate_id: item.candidate.id,
+        candidate_name: item.candidate.full_name,
+        score: item.hybrid_score,
+        final_score: item.hybrid_score,
+        match_score: item.match_score,
+        quality_score: item.quality_score,
+        breakdown: item.score_breakdown,
+        radar_scores: item.candidate.radar_scores || {},
+        matched_requirements: item.matched_requirements,
+        missing_requirements: item.missing_requirements,
+        evaluation_summary: item.evaluation_summary,
+      }));
+      await api.saveReport({
+        title: `${response.job.title} - Ilan Aday Esleśtirme Raporu`,
+        position: response.job.title,
+        filter_criteria: { job_id: response.job.id, job: response.job, run_id: response.run?.id },
+        matched_candidates: matchedCandidates,
+        ai_summary: response.run?.ai_summary || '',
+      });
+      setSaveMessage('Rapor kaydedildi.');
+    } catch (saveError) {
+      setSaveMessage(saveError.message || 'Rapor kaydedilemedi.');
+    } finally {
+      setSavingReport(false);
+    }
+  };
   return <section className="space-y-3">
-    <div className="flex items-center justify-between"><div><h2 className="text-xl font-bold text-gray-900">Aday sıralaması</h2><p className="mt-1 text-sm text-gray-500">İlana uyum %80, CV profil kalitesi %20 ağırlıkla nihai sırayı oluşturur.</p></div><span className="rounded-lg bg-success-50 px-3 py-1.5 text-sm font-semibold text-success-600">Rapor kaydedildi</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold text-gray-900">Aday sıralaması</h2><p className="mt-1 text-sm text-gray-500">İlana uyum %80, CV profil kalitesi %20 ağırlıkla nihai sırayı oluşturur.</p></div><div className="flex items-center gap-3"><span className={`text-sm ${saveMessage.includes('kaydedildi') ? 'text-success-600' : 'text-danger-600'}`}>{saveMessage}</span><button type="button" onClick={saveReport} disabled={savingReport} className="antigravity-button inline-flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-50"><Save size={16} />{savingReport ? 'Kaydediliyor...' : 'Raporu kaydet'}</button></div></div>
     {response.results.map(result => <article key={result.candidate.id} className="job-result-card">
       <div className="flex items-start gap-4">
         <div className="rank-badge">{result.rank}</div>
