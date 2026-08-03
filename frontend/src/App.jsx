@@ -19,29 +19,32 @@ export default function App() {
   const setInterviews = useStore(state => state.setInterviews);
   const setReports = useStore(state => state.setReports);
   const setWeights = useStore(state => state.setWeights);
-  const hasCachedData = () => ['candidates', 'interviews', 'reports', 'weights']
-    .some(key => Boolean(localStorage.getItem(`ikai-cache-${key}`)));
-  const [isHydrating, setIsHydrating] = useState(() => !hasCachedData());
+  // Do not render stale cached/demo counts while the authoritative API snapshot loads.
+  const [isHydrating, setIsHydrating] = useState(true);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('ikai-color-mode') === 'dark');
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-pink', localStorage.getItem('ikai-theme') === 'pink');
     const load = async () => {
-      const [candidateResult, interviewResult, reportResult, weightResult] = await Promise.allSettled([
-        api.getCandidates(), api.getInterviews(), api.getReports(), api.getWeights(),
-      ]);
-
       const applyCache = (key, result, setter, isValid) => {
         if (result.status !== 'fulfilled' || !isValid(result.value)) return;
         setter(result.value);
         localStorage.setItem(`ikai-cache-${key}`, JSON.stringify(result.value));
       };
 
+      // Dashboard-critical data unblocks the shell; secondary panels revalidate in background.
+      const [candidateResult, interviewResult] = await Promise.allSettled([
+        api.getCandidates(), api.getInterviews(),
+      ]);
       applyCache('candidates', candidateResult, setCandidates, Array.isArray);
       applyCache('interviews', interviewResult, setInterviews, Array.isArray);
+      setIsHydrating(false);
+
+      const [reportResult, weightResult] = await Promise.allSettled([
+        api.getReports(), api.getWeights(),
+      ]);
       applyCache('reports', reportResult, setReports, Array.isArray);
       applyCache('weights', weightResult, setWeights, value => value && typeof value === 'object');
-      setIsHydrating(false);
     };
     load();
   }, [setCandidates, setInterviews, setReports, setWeights]);
