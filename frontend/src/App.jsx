@@ -49,6 +49,11 @@ export default function App() {
     load();
   }, [setCandidates, setInterviews, setReports, setWeights]);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', darkMode);
+    localStorage.setItem('ikai-color-mode', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
   if (isHydrating) {
     return (
       <div className="min-h-screen bg-surface-50 flex items-center justify-center">
@@ -59,11 +64,6 @@ export default function App() {
       </div>
     );
   }
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('theme-dark', darkMode);
-    localStorage.setItem('ikai-color-mode', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
 
   return (
     <div className="flex min-h-screen">
