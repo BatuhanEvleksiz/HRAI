@@ -490,30 +490,30 @@ export default function Reports() {
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-gray-700">Eşleşen Adaylar</h4>
               {draftCandidates.map((candidate, index) => (
-                <div key={candidate._key || candidateKey(candidate, index)} className="flex items-center justify-between gap-4 py-3 border-b border-surface-100">
-                  <div className="flex items-center gap-3">
+                <div key={candidate._key || candidateKey(candidate, index)} className="grid min-w-0 gap-4 border-b border-surface-100 py-5 md:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
+                  <div className="flex min-w-0 items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-xs font-bold">{index + 1}</div>
                     <div>
                       <span className="font-medium text-gray-800">{candidate.candidate_name}</span>
                       {candidate.evaluation_summary && <p className="text-xs text-gray-500 mt-0.5">{candidate.evaluation_summary}</p>}
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 text-right">
+                  <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3 sm:text-right">
                     <div><span className="score-caption">Ä°lan uyumu</span><strong className="text-sm text-gray-700">%{candidate.match_score ?? 0}</strong></div>
                     <div><span className="score-caption">Profil kalitesi</span><strong className="text-sm text-gray-700">%{candidate.quality_score ?? 0}</strong></div>
                     <div><span className="score-caption">Nihai skor</span><strong className={`text-lg ${scoreTone(candidateFinalScore(candidate))}`}>%{candidateFinalScore(candidate)}</strong></div>
                   </div>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div className="grid min-w-0 gap-3 md:col-span-2 md:grid-cols-2">
                     <div><p className="mb-1.5 text-[11px] font-bold uppercase text-success-600">KarÅŸÄ±lanan nitelikler</p><div className="flex flex-wrap gap-1.5">{candidate.matched_requirements?.length ? candidate.matched_requirements.map((item, itemIndex) => <span key={`matched-${itemIndex}`} className="requirement-ok">{requirementLabel(item)}</span>) : <span className="text-xs text-gray-400">AÃ§Ä±k kriter bulunmuyor</span>}</div></div>
                     <div><p className="mb-1.5 text-[11px] font-bold uppercase text-danger-600">Eksik / teyit edilmeli</p><div className="flex flex-wrap gap-1.5">{candidate.missing_requirements?.length ? candidate.missing_requirements.map((item, itemIndex) => <span key={`missing-${itemIndex}`} className="requirement-missing">{requirementLabel(item)}</span>) : <span className="text-xs text-success-600">Belirgin kriter eksiÄŸi yok</span>}</div></div>
                   </div>
                   {candidate.breakdown && Object.keys(candidate.breakdown).length > 0 && (
-                    <div className="mt-3 rounded-xl bg-surface-50 p-3">
+                    <div className="rounded-xl bg-surface-50 p-3 md:col-span-2">
                       <p className="mb-2 text-[11px] font-bold uppercase text-gray-500">Puan kÄ±rÄ±lÄ±mÄ±</p>
                       <div className="grid gap-2 sm:grid-cols-2">
                         {Object.entries(candidate.breakdown).map(([key, item]) => (
-                          <div key={key} className="flex items-center justify-between gap-3 text-xs text-gray-600">
-                            <span>{item.label || key}</span>
+                          <div key={key} className="flex min-w-0 items-center justify-between gap-3 text-xs text-gray-600">
+                            <span className="min-w-0 break-words">{item.label || key}</span>
                             <strong className="text-gray-800">{item.score ?? 0}/{item.max ?? 0}</strong>
                           </div>
                         ))}
