@@ -183,6 +183,7 @@ def match_job(job_id: str, request: JobMatchRequest):
                 "candidate_id": item["candidate"]["id"],
                 "candidate_name": item["candidate"].get("full_name"),
                 "score": item["hybrid_score"],
+                "final_score": item["hybrid_score"],
                 "match_score": item["match_score"],
                 "quality_score": item["quality_score"],
                 "breakdown": item["score_breakdown"],

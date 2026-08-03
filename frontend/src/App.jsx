@@ -32,12 +32,19 @@ export default function App() {
         localStorage.setItem(`ikai-cache-${key}`, JSON.stringify(result.value));
       };
 
-      // Dashboard-critical data unblocks the shell; secondary panels revalidate in background.
-      const [candidateResult, interviewResult] = await Promise.allSettled([
-        api.getCandidates(), api.getInterviews(),
+      // Let the shell open on slow/cold Render instances; late API responses still hydrate the store.
+      const criticalRequests = [
+        api.getCandidates().then(value => {
+          applyCache('candidates', { status: 'fulfilled', value }, setCandidates, Array.isArray);
+        }).catch(error => console.warn('Candidates could not be hydrated:', error)),
+        api.getInterviews().then(value => {
+          applyCache('interviews', { status: 'fulfilled', value }, setInterviews, Array.isArray);
+        }).catch(error => console.warn('Interviews could not be hydrated:', error)),
+      ];
+      await Promise.race([
+        Promise.all(criticalRequests),
+        new Promise(resolve => setTimeout(resolve, 8000)),
       ]);
-      applyCache('candidates', candidateResult, setCandidates, Array.isArray);
-      applyCache('interviews', interviewResult, setInterviews, Array.isArray);
       setIsHydrating(false);
 
       const [reportResult, weightResult] = await Promise.allSettled([

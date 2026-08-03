@@ -37,6 +37,18 @@ function candidateKey(candidate, index = 0) {
   return String(candidate.candidate_id || candidate.candidate_name || index);
 }
 
+function candidateFinalScore(candidate) {
+  return Number(candidate.final_score ?? candidate.hybrid_score ?? candidate.score ?? 0);
+}
+
+function scoreTone(score) {
+  return score >= 70 ? 'text-success-500' : score >= 40 ? 'text-warning-500' : 'text-danger-500';
+}
+
+function requirementLabel(item) {
+  return typeof item === 'string' ? item : item?.label || '';
+}
+
 function scoreFromSignal(value) {
   if (value === null || value === undefined || value === '') return null;
   if (Number.isFinite(Number(value))) return Math.max(0, Math.min(10, Number(value)));
@@ -256,8 +268,12 @@ export default function Reports() {
       <tr>
         <td>${index + 1}</td>
         <td>${escapeHtml(candidate.candidate_name)}</td>
-        <td>%${escapeHtml(candidate.score)}</td>
-        <td>${escapeHtml(candidate.ai_comment || '')}</td>
+        <td>%${escapeHtml(candidate.match_score ?? 0)}</td>
+        <td>%${escapeHtml(candidate.quality_score ?? 0)}</td>
+        <td><strong>%${escapeHtml(candidateFinalScore(candidate))}</strong></td>
+        <td>${escapeHtml((candidate.matched_requirements || []).map(requirementLabel).join(', ') || 'Yok')}</td>
+        <td>${escapeHtml((candidate.missing_requirements || []).map(requirementLabel).join(', ') || 'Yok')}</td>
+        <td>${escapeHtml(candidate.evaluation_summary || candidate.ai_comment || '')}</td>
       </tr>
     `).join('');
     printWindow.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8">
@@ -265,13 +281,14 @@ export default function Reports() {
       <style>
         body{font-family:Arial,sans-serif;color:#1f2937;margin:36px}h1{font-size:24px;margin:0 0 6px}
         .meta{color:#6b7280;margin-bottom:24px}.summary{padding:14px;background:#f3f6ff;border-left:4px solid #1B4EF5;margin:20px 0}
-        table{width:100%;border-collapse:collapse;margin-top:18px}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px}
-        th{background:#f8fafc}.radar{max-width:680px;margin:20px auto}.foot{margin-top:28px;color:#6b7280;font-size:10px}
+        table{width:100%;border-collapse:collapse;margin-top:18px}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:11px;vertical-align:top}
+        th{background:#f8fafc}.radar{max-width:680px;margin:20px auto}.foot{margin-top:28px;color:#6b7280;font-size:10px}table:nth-of-type(2){display:none}
       </style></head><body>
       <h1>${escapeHtml(report.title)}</h1>
       <div class="meta">${escapeHtml(capitalize(report.position) || 'Genel')} · ${escapeHtml(new Date(report.created_at).toLocaleDateString('tr-TR'))}</div>
       ${report.ai_summary ? `<div class="summary">${escapeHtml(report.ai_summary)}</div>` : ''}
       ${radarSvg ? `<div class="radar">${radarSvg}</div>` : ''}
+      <table><thead><tr><th>#</th><th>Aday</th><th>Ilan uyumu</th><th>Profil kalitesi</th><th>Nihai skor</th><th>Karsilanan nitelikler</th><th>Eksik / teyit</th><th>Degerlendirme</th></tr></thead><tbody>${rows}</tbody></table>
       <table><thead><tr><th>#</th><th>Aday</th><th>Eşleşme</th><th>Değerlendirme</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="foot">Radar puanları karar destek amaçlıdır; tek başına işe alım kararı olarak kullanılmamalıdır.</div>
       <script>window.onload=()=>setTimeout(()=>window.print(),250)</script></body></html>`);
@@ -307,10 +324,20 @@ export default function Reports() {
               </div>
 
               {report.matched_candidates?.slice(0, 3).map((candidate, candidateIndex) => (
+                <React.Fragment key={candidateKey(candidate, candidateIndex)}>
                 <div key={candidateKey(candidate, candidateIndex)} className="flex items-center justify-between py-1.5 px-3 bg-surface-50 rounded-lg text-sm">
                   <span className="text-gray-700 font-medium">{candidateIndex + 1}. {candidate.candidate_name}</span>
-                  <span className={`font-bold ${candidate.score >= 70 ? 'text-success-500' : candidate.score >= 40 ? 'text-warning-500' : 'text-danger-500'}`}>%{candidate.score}</span>
+                  <span className={`font-bold ${scoreTone(candidateFinalScore(candidate))}`}>%{candidateFinalScore(candidate)}</span>
                 </div>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500">
+                    <span>Ä°lan uyumu %{candidate.match_score ?? 0}</span>
+                    <span>Profil kalitesi %{candidate.quality_score ?? 0}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="requirement-ok">{candidate.matched_requirements?.length || 0} kriter karÅŸÄ±landÄ±</span>
+                    <span className="requirement-missing">{candidate.missing_requirements?.length || 0} kriter eksik / teyit</span>
+                  </div>
+                </React.Fragment>
               ))}
 
               {report.ai_summary && <p className="text-xs text-gray-500 italic">{report.ai_summary}</p>}
@@ -468,10 +495,31 @@ export default function Reports() {
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-xs font-bold">{index + 1}</div>
                     <div>
                       <span className="font-medium text-gray-800">{candidate.candidate_name}</span>
-                      {candidate.ai_comment && <p className="text-xs text-gray-500 mt-0.5">{candidate.ai_comment}</p>}
+                      {candidate.evaluation_summary && <p className="text-xs text-gray-500 mt-0.5">{candidate.evaluation_summary}</p>}
                     </div>
                   </div>
-                  <span className={`text-2xl font-extrabold ${candidate.score >= 70 ? 'text-success-500' : candidate.score >= 40 ? 'text-warning-500' : 'text-danger-500'}`}>%{candidate.score}</span>
+                  <div className="grid grid-cols-3 gap-3 text-right">
+                    <div><span className="score-caption">Ä°lan uyumu</span><strong className="text-sm text-gray-700">%{candidate.match_score ?? 0}</strong></div>
+                    <div><span className="score-caption">Profil kalitesi</span><strong className="text-sm text-gray-700">%{candidate.quality_score ?? 0}</strong></div>
+                    <div><span className="score-caption">Nihai skor</span><strong className={`text-lg ${scoreTone(candidateFinalScore(candidate))}`}>%{candidateFinalScore(candidate)}</strong></div>
+                  </div>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <div><p className="mb-1.5 text-[11px] font-bold uppercase text-success-600">KarÅŸÄ±lanan nitelikler</p><div className="flex flex-wrap gap-1.5">{candidate.matched_requirements?.length ? candidate.matched_requirements.map((item, itemIndex) => <span key={`matched-${itemIndex}`} className="requirement-ok">{requirementLabel(item)}</span>) : <span className="text-xs text-gray-400">AÃ§Ä±k kriter bulunmuyor</span>}</div></div>
+                    <div><p className="mb-1.5 text-[11px] font-bold uppercase text-danger-600">Eksik / teyit edilmeli</p><div className="flex flex-wrap gap-1.5">{candidate.missing_requirements?.length ? candidate.missing_requirements.map((item, itemIndex) => <span key={`missing-${itemIndex}`} className="requirement-missing">{requirementLabel(item)}</span>) : <span className="text-xs text-success-600">Belirgin kriter eksiÄŸi yok</span>}</div></div>
+                  </div>
+                  {candidate.breakdown && Object.keys(candidate.breakdown).length > 0 && (
+                    <div className="mt-3 rounded-xl bg-surface-50 p-3">
+                      <p className="mb-2 text-[11px] font-bold uppercase text-gray-500">Puan kÄ±rÄ±lÄ±mÄ±</p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {Object.entries(candidate.breakdown).map(([key, item]) => (
+                          <div key={key} className="flex items-center justify-between gap-3 text-xs text-gray-600">
+                            <span>{item.label || key}</span>
+                            <strong className="text-gray-800">{item.score ?? 0}/{item.max ?? 0}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
