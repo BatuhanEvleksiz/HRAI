@@ -22,7 +22,7 @@ const columnConfig = {
   rejected: { title: 'Reddedilenler', color: 'border-danger-300', bg: 'bg-danger-50/30', dotColor: 'bg-danger-400' },
 };
 
-function InterviewCard({ interview, onToggleComplete, onDelete, onAddNote }) {
+function InterviewCard({ interview, onToggleComplete, onDelete, onAddNote, isStatusChanging }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: interview.id });
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteText, setNoteText] = useState('');
@@ -47,7 +47,7 @@ function InterviewCard({ interview, onToggleComplete, onDelete, onAddNote }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`antigravity-card kanban-card p-4 space-y-2 mb-3 ${isDragging ? 'kanban-card--dragging' : ''}`}
+      className={`antigravity-card kanban-card p-4 space-y-2 mb-3 ${isDragging ? 'kanban-card--dragging' : ''} ${isStatusChanging ? 'kanban-card--status-changing' : ''}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-2">
@@ -128,7 +128,7 @@ function InterviewCard({ interview, onToggleComplete, onDelete, onAddNote }) {
   );
 }
 
-function KanbanColumn({ status, interviews, onToggleComplete, onDelete, onAddNote }) {
+function KanbanColumn({ status, interviews, onToggleComplete, onDelete, onAddNote, statusChangingId }) {
   const config = columnConfig[status];
   const items = interviews.filter(i => i.status === status);
   const { setNodeRef, isOver } = useDroppable({ id: `column:${status}` });
@@ -153,6 +153,7 @@ function KanbanColumn({ status, interviews, onToggleComplete, onDelete, onAddNot
             onToggleComplete={onToggleComplete}
             onDelete={onDelete}
             onAddNote={onAddNote}
+            isStatusChanging={statusChangingId === interview.id}
           />
         ))}
       </SortableContext>
@@ -460,6 +461,7 @@ export default function Interviews({ defaultTab = 'schedule' }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [statusChangingId, setStatusChangingId] = useState(null);
   const dragTargetStatus = useRef(null);
   const dragStartStatus = useRef(null);
   const [newInterview, setNewInterview] = useState({
@@ -502,6 +504,7 @@ export default function Interviews({ defaultTab = 'schedule' }) {
     try {
       await api.updateInterviewStatus(active.id, targetStatus);
     } catch (saveError) {
+      updateInterview(id, previous);
       moveInterview(active.id, startStatus);
       setError(`Mülakat durumu kaydedilemedi: ${saveError.message}`);
     }
@@ -521,12 +524,18 @@ export default function Interviews({ defaultTab = 'schedule' }) {
 
   const handleToggleComplete = async (id, completed) => {
     const interview = interviews.find(i => i.id === id);
-    const data = { is_completed: interview.is_completed === completed ? null : completed };
+    if (!interview) return;
+    const previous = { status: interview.status, is_completed: interview.is_completed };
+    const data = { status: completed ? 'approved' : 'rejected', is_completed: completed };
+    setStatusChangingId(id);
     updateInterview(id, data);
     try {
       await api.updateInterview(id, data);
     } catch (saveError) {
+      updateInterview(id, previous);
       setError(`Mülakat durumu kaydedilemedi: ${saveError.message}`);
+    } finally {
+      window.setTimeout(() => setStatusChangingId(current => current === id ? null : current), 360);
     }
   };
 
@@ -692,6 +701,7 @@ export default function Interviews({ defaultTab = 'schedule' }) {
               onToggleComplete={handleToggleComplete}
               onDelete={handleDelete}
               onAddNote={handleAddNote}
+              statusChangingId={statusChangingId}
             />
           ))}
         </div>
