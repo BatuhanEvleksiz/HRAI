@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import { api } from '../api/api';
 import CandidateRadarChart from '../components/CandidateRadarChart';
 import SlideDeleteConfirm from '../components/SlideDeleteConfirm';
-import { Search, Eye, Edit3, X, Save, FolderOpen, CheckCircle, XCircle, Clock, Code, Globe, Briefcase, GraduationCap, MessageSquareText, Loader2, MapPin, Link2, GitFork, ExternalLink, Award, Building2, ShieldCheck } from 'lucide-react';
+import { Search, Eye, Edit3, X, Save, FolderOpen, CheckCircle, XCircle, Clock, Code, Globe, Briefcase, GraduationCap, MessageSquareText, Loader2, MapPin, Link2, GitFork, ExternalLink, Award, Building2, ShieldCheck, StickyNote } from 'lucide-react';
 
 function capitalize(str) {
   if (!str) return '';
@@ -30,6 +30,9 @@ export default function SavedCVs() {
   const [interviewAnalyses, setInterviewAnalyses] = useState([]);
   const [loadingAnalyses, setLoadingAnalyses] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [openNoteId, setOpenNoteId] = useState(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [savingNoteId, setSavingNoteId] = useState(null);
 
   useEffect(() => {
     if (!viewingCV?.id) {
@@ -73,6 +76,24 @@ export default function SavedCVs() {
       updateCandidate(id, { status: newStatus });
     } catch {
       window.alert('CV durumu veritabanında güncellenemedi.');
+    }
+  };
+
+  const openCandidateNote = (candidate) => {
+    setOpenNoteId(candidate.id);
+    setNoteDraft(candidate.hr_notes || '');
+  };
+
+  const saveCandidateNote = async (id) => {
+    setSavingNoteId(id);
+    try {
+      await api.updateCandidate(id, { hr_notes: noteDraft.trim() });
+      updateCandidate(id, { hr_notes: noteDraft.trim() });
+      setOpenNoteId(null);
+    } catch {
+      window.alert('İK notu kaydedilemedi.');
+    } finally {
+      setSavingNoteId(null);
     }
   };
 
@@ -136,11 +157,30 @@ export default function SavedCVs() {
                   </p>
                   {candidate.department && <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-400"><Building2 className="h-3.5 w-3.5" />{capitalize(candidate.department)}</p>}
                 </div>
-                <span className={`pill ${sConfig.bg} ${sConfig.color} ${sConfig.border} border`}>
-                  <sConfig.icon className="w-3 h-3 mr-1" />
-                  {sConfig.label}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openNoteId === candidate.id ? setOpenNoteId(null) : openCandidateNote(candidate)}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${candidate.hr_notes ? 'border-warning-200 bg-warning-50 text-warning-600' : 'border-surface-200 bg-surface-50 text-gray-400 hover:border-primary-200 hover:bg-primary-50 hover:text-primary-500'}`}
+                    title={candidate.hr_notes ? 'İK notunu düzenle' : 'İK notu ekle'}
+                    aria-label={`${candidate.full_name} için İK notu`}
+                  >
+                    <StickyNote className="h-4 w-4" />
+                  </button>
+                  <span className={`pill ${sConfig.bg} ${sConfig.color} ${sConfig.border} border`}>
+                    <sConfig.icon className="w-3 h-3 mr-1" />
+                    {sConfig.label}
+                  </span>
+                </div>
               </div>
+
+              {openNoteId === candidate.id && <div className="rounded-xl border border-warning-200 bg-warning-50/50 p-3">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-warning-700"><StickyNote className="h-3.5 w-3.5" /> İK notu</div>
+                <textarea value={noteDraft} onChange={event => setNoteDraft(event.target.value)} rows={3} autoFocus placeholder="Adayla ilgili kısa bir hatırlatma yazın..." className="w-full resize-y rounded-lg border border-warning-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-warning-400" />
+                <div className="mt-2 flex justify-end gap-2"><button type="button" onClick={() => setOpenNoteId(null)} className="rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-white">İptal</button><button type="button" onClick={() => saveCandidateNote(candidate.id)} disabled={savingNoteId === candidate.id} className="inline-flex items-center gap-1.5 rounded-lg bg-warning-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"><Save className="h-3.5 w-3.5" />{savingNoteId === candidate.id ? 'Kaydediliyor...' : 'Notu kaydet'}</button></div>
+              </div>}
+
+              {candidate.hr_notes && openNoteId !== candidate.id && <button type="button" onClick={() => openCandidateNote(candidate)} className="flex w-full items-start gap-2 rounded-lg bg-warning-50 px-3 py-2 text-left text-xs text-warning-800 hover:bg-warning-100"><StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span className="line-clamp-2">{candidate.hr_notes}</span></button>}
 
               {/* Info */}
               <div className="text-sm text-gray-500 space-y-1">

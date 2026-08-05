@@ -19,6 +19,7 @@ class CandidateCreate(BaseModel):
     certifications: List[Dict[str, Any]] = Field(default_factory=list)
     projects: List[Dict[str, Any]] = Field(default_factory=list) # {title, description, technologies}
     ai_summary: Optional[str] = None
+    hr_notes: Optional[str] = None
     raw_cv_text: Optional[str] = None
     original_filename: Optional[str] = None
     source_fingerprint: Optional[str] = None
@@ -44,6 +45,7 @@ class CandidateUpdate(BaseModel):
     certifications: Optional[List[Dict[str, Any]]] = None
     projects: Optional[List[Dict[str, Any]]] = None
     ai_summary: Optional[str] = None
+    hr_notes: Optional[str] = None
     radar_scores: Optional[Dict[str, Any]] = None
     analysis_meta: Optional[Dict[str, Any]] = None
     quality_score: Optional[float] = None
