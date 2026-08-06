@@ -38,11 +38,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-6 py-6 flex items-center gap-3">
         <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-          {companyLogo ? (
-            <img src={companyLogo} alt="Şirket logosu" className="w-full h-full object-contain p-1.5" />
-          ) : (
-            <Brain className="w-6 h-6 text-white" />
-          )}
+          <Brain className="w-6 h-6 text-white" />
         </div>
         <div>
           <h1 className="text-lg font-bold tracking-tight">IKAI System</h1>
@@ -82,7 +78,9 @@ export default function Sidebar() {
       <div className="px-6 py-4 border-t border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold">
-            İK
+            {companyLogo ? (
+              <img src={companyLogo} alt="Şirket logosu" className="w-full h-full object-contain p-1" />
+            ) : 'İK'}
           </div>
           <div>
             <p className="text-sm font-medium">İK Uzmanı</p>
