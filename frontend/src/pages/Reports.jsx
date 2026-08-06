@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { api } from '../api/api';
 import SlideDeleteConfirm from '../components/SlideDeleteConfirm';
@@ -127,6 +127,17 @@ export default function Reports() {
   const [isSavingScores, setIsSavingScores] = useState(false);
   const [message, setMessage] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [companyLogo, setCompanyLogo] = useState(() => localStorage.getItem('ikai-company-logo') || '');
+
+  useEffect(() => {
+    const refreshLogo = () => setCompanyLogo(localStorage.getItem('ikai-company-logo') || '');
+    window.addEventListener('company-logo-updated', refreshLogo);
+    window.addEventListener('storage', refreshLogo);
+    return () => {
+      window.removeEventListener('company-logo-updated', refreshLogo);
+      window.removeEventListener('storage', refreshLogo);
+    };
+  }, []);
 
   const openReport = async report => {
     const enriched = (report.matched_candidates || []).map((matchedCandidate, index) => {
@@ -264,6 +275,7 @@ export default function Reports() {
     const radarSvg = includeRadar
       ? document.querySelector('[data-report-radar] svg')?.outerHTML || ''
       : '';
+    const logo = localStorage.getItem('ikai-company-logo') || companyLogo;
     const rows = reportCandidates.map((candidate, index) => `
       <tr>
         <td>${index + 1}</td>
@@ -279,13 +291,12 @@ export default function Reports() {
     printWindow.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8">
       <title>${escapeHtml(report.title)}</title>
       <style>
-        body{font-family:Arial,sans-serif;color:#1f2937;margin:36px}h1{font-size:24px;margin:0 0 6px}
+        body{font-family:Arial,sans-serif;color:#1f2937;margin:36px}h1{font-size:24px;margin:0 0 6px}.report-header{position:relative;padding-right:150px;min-height:72px}.report-logo{position:absolute;right:0;top:0;width:120px;height:72px;object-fit:contain}.report-header h1{margin-top:4px}
         .meta{color:#6b7280;margin-bottom:24px}.summary{padding:14px;background:#f3f6ff;border-left:4px solid #1B4EF5;margin:20px 0}
         table{width:100%;border-collapse:collapse;margin-top:18px}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:11px;vertical-align:top}
         th{background:#f8fafc}.radar{max-width:680px;margin:20px auto}.foot{margin-top:28px;color:#6b7280;font-size:10px}table:nth-of-type(2){display:none}
       </style></head><body>
-      <h1>${escapeHtml(report.title)}</h1>
-      <div class="meta">${escapeHtml(capitalize(report.position) || 'Genel')} · ${escapeHtml(new Date(report.created_at).toLocaleDateString('tr-TR'))}</div>
+      <div class="report-header">${logo ? `<img class="report-logo" src="${escapeHtml(logo)}" alt="Şirket logosu">` : ''}<h1>${escapeHtml(report.title)}</h1><div class="meta">${escapeHtml(capitalize(report.position) || 'Genel')} · ${escapeHtml(new Date(report.created_at).toLocaleDateString('tr-TR'))}</div></div>
       ${report.ai_summary ? `<div class="summary">${escapeHtml(report.ai_summary)}</div>` : ''}
       ${radarSvg ? `<div class="radar">${radarSvg}</div>` : ''}
       <table><thead><tr><th>#</th><th>Aday</th><th>Ilan uyumu</th><th>Profil kalitesi</th><th>Nihai skor</th><th>Karsilanan nitelikler</th><th>Eksik / teyit</th><th>Degerlendirme</th></tr></thead><tbody>${rows}</tbody></table>
@@ -312,7 +323,7 @@ export default function Reports() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {reports.map((report, index) => (
             <div key={report.id} className="antigravity-card p-6 space-y-4 animate-slide-up" style={{ animationDelay: `${index * 80}ms` }}>
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-bold text-gray-900">{report.title}</h3>
                   <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-gray-400">
@@ -321,6 +332,7 @@ export default function Reports() {
                     <span className="flex items-center gap-1"><Users className="w-3 h-3" />{report.matched_candidates?.length || 0} aday</span>
                   </div>
                 </div>
+                {companyLogo && <img src={companyLogo} alt="Şirket logosu" className="h-12 w-20 shrink-0 object-contain" />}
               </div>
 
               {report.matched_candidates?.slice(0, 3).map((candidate, candidateIndex) => (
@@ -366,9 +378,12 @@ export default function Reports() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => setViewingReport(null)}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-7 animate-slide-up" onClick={event => event.stopPropagation()}>
             <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-              <div>
+              <div className="flex items-start gap-4">
+                <div className="min-w-0 flex-1">
                 <h2 className="text-xl font-bold text-gray-900">{viewingReport.title}</h2>
                 <p className="text-sm text-gray-500 mt-1">{capitalize(viewingReport.position)} · {new Date(viewingReport.created_at).toLocaleDateString('tr-TR')}</p>
+                </div>
+                {companyLogo && <img src={companyLogo} alt="Şirket logosu" className="h-16 w-28 shrink-0 object-contain" />}
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => exportReportPdf(viewingReport, draftCandidates, true)} className="px-3 py-2 rounded-xl text-sm font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 flex items-center gap-2">
