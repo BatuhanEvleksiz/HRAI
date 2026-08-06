@@ -96,6 +96,8 @@ export default function MatchingEngine() {
   const [position, setPosition] = useState('');
   const [requiredExperienceYears, setRequiredExperienceYears] = useState('');
   const [selectedSkills, setSelectedSkills] = useState([]);
+  const [skillSearch, setSkillSearch] = useState('');
+  const [skillsOpen, setSkillsOpen] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
   const [selectedUniversities, setSelectedUniversities] = useState([]);
   const [projectKeywords, setProjectKeywords] = useState([]);
@@ -132,6 +134,10 @@ export default function MatchingEngine() {
       setSelectedSkills([...selectedSkills, skill]);
     }
   };
+
+  const visibleSkills = AVAILABLE_SKILLS.filter(skill =>
+    skill.toLocaleLowerCase('tr-TR').includes(skillSearch.trim().toLocaleLowerCase('tr-TR'))
+  );
 
   const handleInlineWeightChange = (key, value) => {
     const nextValue = Math.max(0, Math.min(100, Number(value)));
@@ -418,20 +424,67 @@ export default function MatchingEngine() {
             </label>
             <InlineWeightSlider weightKey="skill_weight" weights={weights} onChange={handleInlineWeightChange} />
           </div>
-          <div className="flex flex-wrap gap-2 p-3 bg-surface-50 rounded-xl border border-surface-200 max-h-[180px] overflow-y-auto">
-            {AVAILABLE_SKILLS.map(skill => (
-              <button
-                key={skill}
-                onClick={() => toggleSkill(skill)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                  selectedSkills.includes(skill)
-                    ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/30 scale-105'
-                    : 'bg-white text-gray-600 border border-surface-200 hover:border-primary-300 hover:text-primary-600'
-                }`}
-              >
-                {skill}
-              </button>
-            ))}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setSkillsOpen(open => !open)}
+              className="flex min-h-[48px] w-full items-center gap-2 rounded-xl border border-surface-200 bg-surface-50 p-2.5 text-left transition-colors hover:border-primary-300"
+              aria-expanded={skillsOpen}
+              aria-haspopup="listbox"
+            >
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                {selectedSkills.slice(0, 3).map(skill => (
+                  <span key={skill} className="pill pill-blue inline-flex items-center gap-1">
+                    {skill}
+                    <X
+                      className="h-3 w-3 cursor-pointer hover:text-danger-500"
+                      onClick={event => { event.stopPropagation(); toggleSkill(skill); }}
+                    />
+                  </span>
+                ))}
+                {selectedSkills.length > 3 && <span className="pill pill-blue">+{selectedSkills.length - 3}</span>}
+                {!selectedSkills.length && <span className="px-1 text-sm text-gray-400">Beceri seçin veya arayın</span>}
+              </div>
+              <ChevronDown className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${skillsOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {skillsOpen && (
+              <div className="absolute left-0 right-0 top-full z-30 mt-2 rounded-xl border border-surface-200 bg-white p-3 shadow-xl">
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    autoFocus
+                    type="search"
+                    value={skillSearch}
+                    onChange={event => setSkillSearch(event.target.value)}
+                    placeholder="Beceri ara..."
+                    className="antigravity-input w-full pl-9"
+                  />
+                </div>
+                <div className="grid max-h-52 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2" role="listbox" aria-label="Beceri seçenekleri">
+                  {visibleSkills.map(skill => {
+                    const selected = selectedSkills.includes(skill);
+                    return (
+                      <button
+                        type="button"
+                        key={skill}
+                        role="option"
+                        aria-selected={selected}
+                        onClick={() => toggleSkill(skill)}
+                        className={`flex items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${selected ? 'bg-primary-50 text-primary-700' : 'text-gray-600 hover:bg-surface-50 hover:text-primary-600'}`}
+                      >
+                        {skill}
+                        {selected && <CheckCircle className="h-3.5 w-3.5 text-primary-500" />}
+                      </button>
+                    );
+                  })}
+                  {!visibleSkills.length && <p className="col-span-full px-3 py-4 text-center text-xs text-gray-400">Beceri bulunamadı.</p>}
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-surface-100 pt-2">
+                  <span className="text-xs text-gray-400">{selectedSkills.length} beceri seçili</span>
+                  <button type="button" onClick={() => { setSkillsOpen(false); setSkillSearch(''); }} className="text-xs font-semibold text-primary-600 hover:text-primary-700">Tamam</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
