@@ -17,7 +17,21 @@ const AVAILABLE_SKILLS = [
   'docker', 'kubernetes', 'aws', 'azure', 'gcp',
   'git', 'ci/cd', 'terraform', 'jenkins', 'linux',
   'html', 'css', 'tailwindcss', 'sass',
-  'graphql', 'rest api', 'microservices', 'kafka', 'rabbitmq'
+  'graphql', 'rest api', 'microservices', 'kafka', 'rabbitmq',
+  'tensorflow', 'pytorch', 'scikit-learn', 'opencv', 'computer vision', 'nlp',
+  'machine learning', 'deep learning', 'data analysis', 'data visualization',
+  'power bi', 'tableau', 'excel', 'matlab', 'spss', 'r', 'spark', 'hadoop',
+  'airflow', 'dbt', 'snowflake', 'databricks', 'bigquery',
+  'autocad', 'revit', 'solidworks', 'catia', 'sap2000', 'etabs', 'staad.pro',
+  'tekla structures', 'navisworks', 'civil 3d', 'archicad', 'sketchup',
+  '3ds max', 'lumion', 'primavera p6', 'ms project', 'quantity surveying',
+  'bim', 'structural analysis', 'project planning', 'site management',
+  'erp', 'sap', 'microsoft dynamics', 'salesforce', 'sharepoint',
+  'network security', 'firewall', 'vpn', 'routing', 'switching', 'ccna',
+  'active directory', 'windows server', 'vmware', 'cybersecurity',
+  'agile', 'scrum', 'kanban', 'devops', 'test automation', 'unit testing',
+  'system design', 'software architecture', 'api integration', 'technical writing',
+  'leadership', 'teamwork', 'communication', 'problem solving', 'time management'
 ];
 
 const AVAILABLE_LANGUAGES = ['ingilizce', 'almanca', 'fransızca', 'ispanyolca', 'türkçe'];
