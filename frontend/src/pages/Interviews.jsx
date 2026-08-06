@@ -456,7 +456,7 @@ function InterviewAssistant({ interviews, candidates }) {
 }
 
 export default function Interviews({ defaultTab = 'schedule' }) {
-  const { interviews, candidates, addInterview, updateInterview, moveInterview, deleteInterview } = useStore();
+  const { interviews, candidates, addInterview, updateInterview, updateCandidate, moveInterview, deleteInterview } = useStore();
   const [showNewForm, setShowNewForm] = useState(false);
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [isSaving, setIsSaving] = useState(false);
@@ -540,9 +540,16 @@ export default function Interviews({ defaultTab = 'schedule' }) {
   };
 
   const handleAddNote = async (id, notes) => {
+    const interview = interviews.find(item => item.id === id);
+    const candidate = interview && candidates.find(item =>
+      (interview.candidate_id && String(item.id) === String(interview.candidate_id))
+      || item.full_name?.toLocaleLowerCase('tr-TR') === interview.candidate_name?.toLocaleLowerCase('tr-TR')
+    );
     updateInterview(id, { notes });
+    if (candidate) updateCandidate(candidate.id, { hr_notes: notes });
     try {
       await api.updateInterview(id, { notes });
+      if (candidate) await api.updateCandidate(candidate.id, { hr_notes: notes });
     } catch (saveError) {
       setError(`Not kaydedilemedi: ${saveError.message}`);
     }

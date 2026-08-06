@@ -22,7 +22,7 @@ const statusConfig = {
 };
 
 export default function SavedCVs() {
-  const { candidates, deleteCandidate, updateCandidate } = useStore();
+  const { candidates, interviews, deleteCandidate, updateCandidate, updateInterview } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewingCV, setViewingCV] = useState(null);
@@ -86,9 +86,16 @@ export default function SavedCVs() {
 
   const saveCandidateNote = async (id) => {
     setSavingNoteId(id);
+    const note = noteDraft.trim();
+    const candidateInterviews = interviews.filter(interview =>
+      (interview.candidate_id && String(interview.candidate_id) === String(id))
+      || interview.candidate_name?.toLocaleLowerCase('tr-TR') === candidates.find(item => item.id === id)?.full_name?.toLocaleLowerCase('tr-TR')
+    );
     try {
-      await api.updateCandidate(id, { hr_notes: noteDraft.trim() });
-      updateCandidate(id, { hr_notes: noteDraft.trim() });
+      await api.updateCandidate(id, { hr_notes: note });
+      await Promise.all(candidateInterviews.map(interview => api.updateInterview(interview.id, { notes: note })));
+      updateCandidate(id, { hr_notes: note });
+      candidateInterviews.forEach(interview => updateInterview(interview.id, { notes: note }));
       setOpenNoteId(null);
     } catch {
       window.alert('İK notu kaydedilemedi.');
