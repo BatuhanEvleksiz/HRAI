@@ -300,6 +300,8 @@ export default function JobPostings({ defaultTab = 'list' }) {
       ...(candidate.skills || []),
     ].filter(Boolean).join(' ').toLocaleLowerCase('tr-TR').includes(query));
   }, [candidateSearch, candidates]);
+  const visibleCandidateIds = useMemo(() => filteredCandidates.map(candidate => candidate.id), [filteredCandidates]);
+  const allVisibleSelected = visibleCandidateIds.length > 0 && visibleCandidateIds.every(id => selectedCandidateIds.includes(id));
   const selectedJob = jobs.find(job => job.id === selectedJobId);
   const deleteJob = async (job) => {
     if (!window.confirm(`“${job.title}” ilanı silinsin mi?`)) return;
@@ -311,11 +313,9 @@ export default function JobPostings({ defaultTab = 'list' }) {
       : [...current, candidateId]);
   };
   const toggleVisibleCandidates = () => {
-    const visibleIds = filteredCandidates.map(candidate => candidate.id);
-    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedCandidateIds.includes(id));
     setSelectedCandidateIds(current => allVisibleSelected
-      ? current.filter(id => !visibleIds.includes(id))
-      : [...new Set([...current, ...visibleIds])]);
+      ? current.filter(id => !visibleCandidateIds.includes(id))
+      : [...new Set([...current, ...visibleCandidateIds])]);
   };
   const matchExisting = async () => {
     if (!selectedJobId || !selectedCandidateIds.length) return;
@@ -374,7 +374,12 @@ export default function JobPostings({ defaultTab = 'list' }) {
               <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input className="job-input pl-10" value={candidateSearch} onChange={event => setCandidateSearch(event.target.value)} placeholder="İsim, pozisyon, üniversite veya yetkinlik ara" />
             </div>
-            <button type="button" className="candidate-select-all" onClick={toggleVisibleCandidates}>
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-700">
+              <input type="checkbox" checked={allVisibleSelected} onChange={toggleVisibleCandidates} disabled={!filteredCandidates.length} aria-label="Filtrelenen adayların tümünü seç" className="h-4 w-4 accent-primary-600" />
+              Tümünü seç
+            </label>
+            <span className="text-xs text-gray-400">{filteredCandidates.length} aday gösteriliyor</span>
+            <button type="button" className="candidate-select-all" onClick={toggleVisibleCandidates} disabled={!filteredCandidates.length}>
               {filteredCandidates.length > 0 && filteredCandidates.every(candidate => selectedCandidateIds.includes(candidate.id)) ? 'Görünenleri temizle' : 'Görünenlerin tümünü seç'}
             </button>
           </div>
