@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle, BriefcaseBusiness, Building2, Check, ChevronRight, Clock3,
-  MapPin, Pencil, Plus, Save, Search, Sparkles, Trash2, Upload, Users, X,
+  FileText, MapPin, Pencil, Plus, Save, Search, Sparkles, Trash2, Upload, Users, X,
 } from 'lucide-react';
 import { api } from '../api/api';
 import BatchCandidateUploader from '../components/BatchCandidateUploader';
@@ -16,6 +16,65 @@ const EMPTY_JOB = {
 };
 
 const STATUS_LABELS = { draft: 'Taslak', published: 'Yayında', closed: 'Kapalı' };
+
+function cleanTemplateLine(line) {
+  return line.replace(/\*\*/g, '').replace(/^\s*(?:[-\u2022*]|\d+[.)])\s*/, '').trim();
+}
+
+function sectionLines(lines, aliases) {
+  const start = lines.findIndex(line => aliases.some(alias => cleanTemplateLine(line).toLocaleLowerCase('tr-TR').startsWith(alias)));
+  if (start < 0) return [];
+  const result = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = cleanTemplateLine(lines[index]);
+    if (!line) continue;
+    if (/^(?:iş ilanı hakkında|aranan nitelikler|iş tanımı|sorumluluklar|aday kriterleri|zorunlu yetkinlikler|tercih edilen yetkinlikler|uygun bölümler|tercih edilen sertifikalar|askerlik durumu|ehliyet|eğitim seviyesi|yabancı dil|tecrübe|minimum deneyim|maksimum deneyim)/i.test(line)) break;
+    result.push(line);
+  }
+  return result;
+}
+
+function labeledValue(lines, labels) {
+  const line = lines.find(item => labels.some(label => item.toLocaleLowerCase('tr-TR').startsWith(label)));
+  return line ? line.replace(/^([^:]+):\s*/i, '').trim() : '';
+}
+
+function parseJobTemplate(text) {
+  const lines = String(text || '').split(/\r?\n/).map(cleanTemplateLine).filter(Boolean);
+  const valueAfter = labels => labeledValue(lines, labels);
+  const about = sectionLines(lines, ['iş ilanı hakkında']);
+  const qualifications = sectionLines(lines, ['aranan nitelikler']);
+  const responsibilities = sectionLines(lines, ['iş tanımı', 'sorumluluklar']);
+  const requiredSkills = sectionLines(lines, ['zorunlu yetkinlikler']);
+  const preferredSkills = sectionLines(lines, ['tercih edilen yetkinlikler']);
+  const experience = valueAfter(['tecrübe', 'deneyim']);
+  const experienceNumbers = (experience.match(/\d+(?:[.,]\d+)?/g) || []).map(Number);
+  const language = valueAfter(['yabancı dil', 'yabancı diller']);
+  const languageMatch = language.match(/^([^()\d]+?)(?:\s*\([^)]*\))?\s*(A1|A2|B1|B2|C1|C2|Anadil)?$/i);
+  return {
+    ...EMPTY_JOB,
+    title: valueAfter(['iş ilanı başlığı', 'pozisyon', 'ilan başlığı']) || lines[0] || '',
+    company_name: valueAfter(['şirket', 'firma', 'company']),
+    location: valueAfter(['konum', 'lokasyon', 'çalışma yeri']),
+    workplace_type: valueAfter(['çalışma modeli', 'çalışma ortamı']) || EMPTY_JOB.workplace_type,
+    employment_type: valueAfter(['çalışma şekli', 'istihdam türü']) || EMPTY_JOB.employment_type,
+    seniority: valueAfter(['seviye', 'kıdem']),
+    department: valueAfter(['departman', 'bölüm']),
+    about: about.join('\n'),
+    qualifications,
+    responsibilities,
+    required_skills: requiredSkills,
+    preferred_skills: preferredSkills,
+    education_departments: sectionLines(lines, ['uygun bölümler']),
+    preferred_certifications: sectionLines(lines, ['tercih edilen sertifikalar']),
+    military_statuses: sectionLines(lines, ['askerlik durumu']),
+    driver_licenses: sectionLines(lines, ['ehliyet']),
+    min_experience_years: experienceNumbers[0] ?? '',
+    max_experience_years: experienceNumbers[1] ?? experienceNumbers[0] ?? '',
+    education_level: valueAfter(['eğitim seviyesi', 'öğrenim seviyesi']) || EMPTY_JOB.education_level,
+    language_requirements: languageMatch && languageMatch[1] ? [{ language: languageMatch[1].trim(), level: (languageMatch[2] || 'B2').toUpperCase() }] : [],
+  };
+}
 
 function TagEditor({ value = [], onChange, placeholder }) {
   const [draft, setDraft] = useState('');
@@ -124,6 +183,28 @@ function JobForm({ initialJob, onCancel, onSaved }) {
   </form>;
 }
 
+function TemplateImportModal({ onClose, onParsed }) {
+  const [text, setText] = useState('');
+  const [error, setError] = useState('');
+  const parse = () => {
+    const parsed = parseJobTemplate(text);
+    if (!parsed.title.trim()) {
+      setError('Metinde ilan başlığı bulunamadı.');
+      return;
+    }
+    onParsed(parsed);
+  };
+
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl" onClick={event => event.stopPropagation()}>
+      <div className="mb-4 flex items-start justify-between gap-4"><div><h2 className="text-xl font-bold text-gray-900">Hazır şablondan ilan oluştur</h2><p className="mt-1 text-sm text-gray-500">Elindeki ilan metnini yapıştır; alanlar forma otomatik aktarılsın.</p></div><button type="button" onClick={onClose} className="rounded-lg p-2 text-gray-400 hover:bg-surface-100"><X size={20} /></button></div>
+      <textarea value={text} onChange={event => { setText(event.target.value); setError(''); }} autoFocus rows={16} placeholder="Örn.\nPozisyon: Backend Developer\nŞirket: HRAI\nKonum: İstanbul\n\u0130ş ilanı hakkında\n...\nAranan Nitelikler\n- Python\n..." className="w-full resize-y rounded-xl border border-surface-200 bg-surface-50 p-4 text-sm leading-6 text-gray-700 outline-none focus:border-primary-400" />
+      {error && <p className="mt-2 text-sm text-danger-600">{error}</p>}
+      <div className="mt-4 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-lg border border-surface-200 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-surface-50">Vazgeç</button><button type="button" onClick={parse} className="antigravity-button inline-flex items-center gap-2 px-5 py-2.5 text-sm"><FileText size={17} />Alanları doldur</button></div>
+    </div>
+  </div>;
+}
+
 function MatchResults({ response }) {
   const [savingReport, setSavingReport] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -180,6 +261,7 @@ export default function JobPostings({ defaultTab = 'list' }) {
   const [error, setError] = useState('');
   const [formJob, setFormJob] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedJobId, setSelectedJobId] = useState('');
   const [matchResponse, setMatchResponse] = useState(null);
@@ -249,6 +331,8 @@ export default function JobPostings({ defaultTab = 'list' }) {
     <div className="border-b border-surface-200"><div className="flex gap-7"><button className={`job-tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}><BriefcaseBusiness size={17} />İlanlar</button><button className={`job-tab ${tab === 'match' ? 'active' : ''}`} onClick={() => setTab('match')}><Users size={17} />İlan-CV Eşleştirme</button></div></div>
     {error && <div className="flex items-center gap-2 rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-600"><AlertCircle size={17} />{error}</div>}
 
+    <div className="flex justify-end"><button type="button" className="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-semibold text-primary-700 hover:bg-primary-100" onClick={() => setShowTemplateModal(true)}><FileText size={17} />{'Haz\u0131r \u015Fablondan olu\u015Ftur'}</button></div>
+    {showTemplateModal && <TemplateImportModal onClose={() => setShowTemplateModal(false)} onParsed={parsed => { setShowTemplateModal(false); setFormJob(parsed); setShowForm(true); }} />}
     {tab === 'list' ? <>
       <div className="relative max-w-md"><Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input className="job-input pl-10" value={search} onChange={event => setSearch(event.target.value)} placeholder="İlan, şirket veya departman ara" /></div>
       {loading ? <p className="py-12 text-center text-gray-400">İlanlar yükleniyor...</p> : filteredJobs.length ? <div className="grid gap-4 lg:grid-cols-2">{filteredJobs.map(job => <article key={job.id} className="job-card">
