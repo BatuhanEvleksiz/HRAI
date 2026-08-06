@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, FileSearch, FolderOpen, Target,
@@ -21,12 +21,28 @@ const menuItems = [
 ];
 
 export default function Sidebar() {
+  const [companyLogo, setCompanyLogo] = useState(() => localStorage.getItem('ikai-company-logo') || '');
+
+  useEffect(() => {
+    const refreshLogo = () => setCompanyLogo(localStorage.getItem('ikai-company-logo') || '');
+    window.addEventListener('company-logo-updated', refreshLogo);
+    window.addEventListener('storage', refreshLogo);
+    return () => {
+      window.removeEventListener('company-logo-updated', refreshLogo);
+      window.removeEventListener('storage', refreshLogo);
+    };
+  }, []);
+
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-64 sidebar-gradient text-white z-50 flex flex-col">
       {/* Logo */}
       <div className="px-6 py-6 flex items-center gap-3">
         <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-          <Brain className="w-6 h-6 text-white" />
+          {companyLogo ? (
+            <img src={companyLogo} alt="Şirket logosu" className="w-full h-full object-contain p-1.5" />
+          ) : (
+            <Brain className="w-6 h-6 text-white" />
+          )}
         </div>
         <div>
           <h1 className="text-lg font-bold tracking-tight">IKAI System</h1>

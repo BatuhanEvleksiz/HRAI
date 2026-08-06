@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { api } from '../api/api';
-import { Settings, Save, RotateCcw, CheckCircle, AlertCircle, Key, Palette } from 'lucide-react';
+import { Settings, Save, RotateCcw, CheckCircle, AlertCircle, Key, Palette, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { DEFAULT_WEIGHTS, WEIGHT_CONFIG } from '../constants/scoringWeights';
 
 export default function SettingsPage() {
@@ -10,6 +10,10 @@ export default function SettingsPage() {
   const [localWeights, setLocalWeights] = useState({ ...weights });
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [companyLogo, setCompanyLogo] = useState(() => localStorage.getItem('ikai-company-logo') || '');
+  const [logoDraft, setLogoDraft] = useState(() => localStorage.getItem('ikai-company-logo') || '');
+  const [logoSaved, setLogoSaved] = useState(false);
+  const [logoError, setLogoError] = useState('');
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-pink', theme === 'pink');
@@ -53,6 +57,56 @@ export default function SettingsPage() {
     setSaved(false);
   };
 
+  const handleLogoSelect = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setLogoError('');
+    setLogoSaved(false);
+
+    if (!file.type.startsWith('image/')) {
+      setLogoError('Lütfen PNG, JPG, WEBP veya SVG formatında bir görsel seçin.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const maxSize = 512;
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        setLogoDraft(canvas.toDataURL('image/png'));
+      };
+      image.onerror = () => setLogoError('Logo okunamadı. Başka bir görsel deneyin.');
+      image.src = reader.result;
+    };
+    reader.onerror = () => setLogoError('Logo okunamadı. Başka bir görsel deneyin.');
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handleLogoSave = () => {
+    if (!logoDraft) {
+      localStorage.removeItem('ikai-company-logo');
+    } else {
+      localStorage.setItem('ikai-company-logo', logoDraft);
+    }
+    setCompanyLogo(logoDraft);
+    window.dispatchEvent(new Event('company-logo-updated'));
+    setLogoSaved(true);
+    setTimeout(() => setLogoSaved(false), 3000);
+  };
+
+  const handleLogoRemove = () => {
+    setLogoDraft('');
+    setLogoError('');
+    setLogoSaved(false);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -82,6 +136,50 @@ export default function SettingsPage() {
             <span className={`absolute top-1 h-8 w-8 rounded-full bg-white shadow-md transition-all duration-300 ${theme === 'pink' ? 'right-1' : 'left-1'}`} />
           </button>
           <span className="text-sm font-semibold text-accent-600">Lila</span>
+        </div>
+      </div>
+
+      {/* Company Logo */}
+      <div className="antigravity-card-static p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="w-5 h-5 text-primary-500" />
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">Şirket Logosu</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Sol menüde görünecek şirket logosunu yükleyin.</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-5">
+          <div className="w-20 h-20 rounded-2xl border border-surface-200 bg-surface-50 flex items-center justify-center overflow-hidden shrink-0">
+            {logoDraft ? (
+              <img src={logoDraft} alt="Şirket logosu önizlemesi" className="w-full h-full object-contain p-2" />
+            ) : (
+              <ImageIcon className="w-8 h-8 text-gray-300" />
+            )}
+          </div>
+          <div className="flex-1 min-w-[220px] space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <label className="antigravity-button inline-flex items-center gap-2 cursor-pointer">
+                <Upload className="w-4 h-4" />
+                Logo seç
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoSelect} className="sr-only" />
+              </label>
+              {logoDraft && (
+                <button type="button" onClick={handleLogoRemove} className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-surface-100 hover:bg-surface-200 transition-colors inline-flex items-center gap-2">
+                  <Trash2 className="w-4 h-4" />
+                  Kaldır
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-400">PNG, JPG veya WEBP. En fazla 512 px olarak optimize edilir.</p>
+            {logoError && <p className="text-sm text-danger-600">{logoError}</p>}
+          </div>
+        </div>
+        <div className="pt-4 border-t border-surface-100 flex items-center justify-between gap-3">
+          <span className="text-xs text-gray-400">Bu cihazdaki oturumlarda korunur.</span>
+          <button type="button" onClick={handleLogoSave} className={`antigravity-button flex items-center gap-2 ${logoSaved ? 'from-success-500 to-success-400' : ''}`}>
+            {logoSaved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {logoSaved ? 'Logo kaydedildi!' : 'Logo kaydet'}
+          </button>
         </div>
       </div>
 
