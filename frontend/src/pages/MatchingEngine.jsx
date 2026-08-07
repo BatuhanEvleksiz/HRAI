@@ -35,14 +35,14 @@ const AVAILABLE_SKILLS = [
 ];
 
 const AVAILABLE_LANGUAGES = [
-  { value: 'ingilizce', label: 'İngilizce', flag: '\u{1F1EC}\u{1F1E7}' },
-  { value: 'almanca', label: 'Almanca', flag: '\u{1F1E9}\u{1F1EA}' },
-  { value: 'fransızca', label: 'Fransızca', flag: '\u{1F1EB}\u{1F1F7}' },
-  { value: 'ispanyolca', label: 'İspanyolca', flag: '\u{1F1EA}\u{1F1F8}' },
-  { value: 'türkçe', label: 'Türkçe', flag: '\u{1F1F9}\u{1F1F7}' },
-  { value: 'italyanca', label: 'İtalyanca', flag: '\u{1F1EE}\u{1F1F9}' },
-  { value: 'arapça', label: 'Arapça', flag: '\u{1F1F8}\u{1F1E6}' },
-  { value: 'rusça', label: 'Rusça', flag: '\u{1F1F7}\u{1F1FA}' },
+  { value: 'ingilizce', label: 'İngilizce', flag: 'gb' },
+  { value: 'almanca', label: 'Almanca', flag: 'de' },
+  { value: 'fransızca', label: 'Fransızca', flag: 'fr' },
+  { value: 'ispanyolca', label: 'İspanyolca', flag: 'es' },
+  { value: 'türkçe', label: 'Türkçe', flag: 'tr' },
+  { value: 'italyanca', label: 'İtalyanca', flag: 'it' },
+  { value: 'arapça', label: 'Arapça', flag: 'sa' },
+  { value: 'rusça', label: 'Rusça', flag: 'ru' },
 ];
 const LANGUAGE_LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'];
 const LEVEL_ORDER = { 'a1': 1, 'a2': 2, 'b1': 3, 'b2': 4, 'c1': 5, 'c2': 6 };
@@ -54,6 +54,10 @@ const AVAILABLE_UNIVERSITIES = [
 ];
 
 const WEIGHT_STYLE = Object.fromEntries(WEIGHT_CONFIG.map(item => [item.key, item]));
+
+function LanguageFlag({ code }) {
+  return <span className={`language-flag language-flag-${code || 'default'}`} aria-hidden="true" />;
+}
 
 function InlineWeightSlider({ weightKey, weights, onChange }) {
   const config = WEIGHT_STYLE[weightKey];
@@ -531,7 +535,7 @@ export default function MatchingEngine() {
           <div className="flex flex-wrap gap-2 mb-3">
             {selectedLanguages.map(lang => (
               <span key={lang.language} className="pill pill-purple flex items-center gap-1">
-                {languageOption(lang.language)?.flag || '🌐'} {languageOption(lang.language)?.label || capitalize(lang.language)} — {lang.level.toUpperCase()} ve üstü
+                <LanguageFlag code={languageOption(lang.language)?.flag} /> {languageOption(lang.language)?.label || capitalize(lang.language)} — {lang.level.toUpperCase()} ve üstü
                 <X className="w-3 h-3 cursor-pointer hover:text-danger-500" onClick={() => removeLanguage(lang.language)} />
               </span>
             ))}
@@ -539,7 +543,7 @@ export default function MatchingEngine() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative w-full sm:w-56">
               <button type="button" onClick={() => setLanguageOpen(open => !open)} className="flex w-full items-center justify-between rounded-xl border border-surface-200 bg-white px-3 py-2.5 text-sm text-gray-700 shadow-sm hover:border-primary-300" aria-expanded={languageOpen}>
-                <span className="flex items-center gap-2"><span>{languageOption(langToAdd)?.flag || '🌐'}</span>{languageOption(langToAdd)?.label || 'Dil seçin'}</span>
+                <span className="flex items-center gap-2"><LanguageFlag code={languageOption(langToAdd)?.flag} />{languageOption(langToAdd)?.label || 'Dil seçin'}</span>
                 <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${languageOpen ? 'rotate-180' : ''}`} />
               </button>
               {languageOpen && <div className="absolute left-0 right-0 top-full z-30 mt-2 rounded-xl border border-surface-200 bg-white p-2 shadow-xl">
@@ -548,7 +552,7 @@ export default function MatchingEngine() {
                   <input autoFocus value={languageSearch} onChange={event => setLanguageSearch(event.target.value)} placeholder="Dil ara..." className="antigravity-input w-full pl-9" />
                 </div>
                 <div className="max-h-52 overflow-y-auto">
-                  {visibleLanguages.map(language => <button type="button" key={language.value} onClick={() => { setLangToAdd(language.value); setLanguageOpen(false); setLanguageSearch(''); }} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-primary-50 ${langToAdd === language.value ? 'bg-primary-50 text-primary-700' : 'text-gray-700'}`}><span className="text-lg">{language.flag}</span><span>{language.label}</span>{langToAdd === language.value && <CheckCircle className="ml-auto h-4 w-4 text-primary-500" />}</button>)}
+                  {visibleLanguages.map(language => <button type="button" key={language.value} onClick={() => { setLangToAdd(language.value); setLanguageOpen(false); setLanguageSearch(''); }} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-primary-50 ${langToAdd === language.value ? 'bg-primary-50 text-primary-700' : 'text-gray-700'}`}><LanguageFlag code={language.flag} /><span>{language.label}</span>{langToAdd === language.value && <CheckCircle className="ml-auto h-4 w-4 text-primary-500" />}</button>)}
                   {!visibleLanguages.length && <p className="px-3 py-3 text-center text-xs text-gray-400">Dil bulunamadı.</p>}
                 </div>
               </div>}
