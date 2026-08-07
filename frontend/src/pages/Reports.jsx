@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
   FileText, Eye, Calendar, Target, Users, X, Download,
-  Save, SlidersHorizontal,
+  Save, SlidersHorizontal, ChevronDown, FileSpreadsheet, FileType2, Table2,
 } from 'lucide-react';
 
 const RADAR_AXES = [
@@ -67,6 +67,54 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function downloadFile(content, fileName, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function reportRows(reportCandidates = []) {
+  return reportCandidates.map((candidate, index) => ({
+    number: index + 1,
+    name: candidate.candidate_name || '',
+    match: candidate.match_score ?? 0,
+    quality: candidate.quality_score ?? 0,
+    final: candidateFinalScore(candidate),
+    matched: (candidate.matched_requirements || []).map(requirementLabel).join(', '),
+    missing: (candidate.missing_requirements || []).map(requirementLabel).join(', '),
+    evaluation: candidate.evaluation_summary || candidate.ai_comment || '',
+  }));
+}
+
+function csvCell(value) {
+  return `"${String(value ?? '').replaceAll('"', '""').replaceAll('\n', ' ')}"`;
+}
+
+function ExportMenu({ onPdf, onWord, onExcel, onCsv }) {
+  const [open, setOpen] = useState(false);
+  const choose = action => {
+    setOpen(false);
+    action();
+  };
+  return <div className="relative">
+    <button type="button" onClick={() => setOpen(value => !value)} className="inline-flex items-center gap-1.5 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-600 hover:bg-primary-100" title="Raporu dışa aktar">
+      <Download className="w-4 h-4" /> Dışa aktar <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+    </button>
+    {open && <div className="absolute right-0 top-full z-30 mt-2 w-48 rounded-xl border border-surface-200 bg-white p-1.5 shadow-xl">
+      <button type="button" onClick={() => choose(onPdf)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-primary-50"><FileText className="h-4 w-4 text-danger-500" />PDF indir</button>
+      <button type="button" onClick={() => choose(onWord)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-primary-50"><FileType2 className="h-4 w-4 text-primary-500" />Word indir</button>
+      <button type="button" onClick={() => choose(onExcel)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-primary-50"><FileSpreadsheet className="h-4 w-4 text-success-500" />Excel indir</button>
+      <button type="button" onClick={() => choose(onCsv)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-primary-50"><Table2 className="h-4 w-4 text-warning-500" />CSV indir</button>
+    </div>}
+  </div>;
 }
 
 function deriveCvScores(report, matchedCandidate, candidate) {
@@ -306,6 +354,26 @@ export default function Reports() {
     printWindow.document.close();
   };
 
+  const exportEditableTable = (report, reportCandidates, format) => {
+    const rows = reportRows(reportCandidates);
+    const logo = localStorage.getItem('ikai-company-logo') || companyLogo;
+    const baseName = (report.title || 'IKAI-raporu').replace(/[^a-z0-9ğüşöçıİĞÜŞÖÇ_-]+/gi, '-').replace(/-+/g, '-');
+    const tableRows = rows.map(row => `<tr><td>${row.number}</td><td>${escapeHtml(row.name)}</td><td>%${escapeHtml(row.match)}</td><td>%${escapeHtml(row.quality)}</td><td>%${escapeHtml(row.final)}</td><td>${escapeHtml(row.matched || 'Yok')}</td><td>${escapeHtml(row.missing || 'Yok')}</td><td>${escapeHtml(row.evaluation)}</td></tr>`).join('');
+    const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial;color:#1f2937;margin:28px}.header{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #1b4ef5;padding-bottom:14px;margin-bottom:18px}.logo{width:120px;height:64px;object-fit:contain}h1{margin:0 0 5px;font-size:22px}p{color:#64748b;margin:4px 0}table{width:100%;border-collapse:collapse}th,td{border:1px solid #dbe3f0;padding:8px;font-size:11px;text-align:left;vertical-align:top}th{background:#eef4ff;color:#1e3a8a}td:nth-child(1),td:nth-child(3),td:nth-child(4),td:nth-child(5){white-space:nowrap}</style></head><body><div class="header"><div><h1>${escapeHtml(report.title)}</h1><p>${escapeHtml(capitalize(report.position) || 'Genel')} · ${escapeHtml(new Date(report.created_at).toLocaleDateString('tr-TR'))}</p></div>${logo ? `<img class="logo" src="${escapeHtml(logo)}" alt="Şirket logosu">` : ''}</div><table><thead><tr><th>#</th><th>Aday</th><th>İlan uyumu</th><th>Profil kalitesi</th><th>Nihai skor</th><th>Karşılanan nitelikler</th><th>Eksik / teyit</th><th>Değerlendirme</th></tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
+    const extension = format === 'word' ? 'doc' : 'xls';
+    const mime = format === 'word' ? 'application/msword' : 'application/vnd.ms-excel';
+    downloadFile(html, `${baseName}.${extension}`, `${mime};charset=utf-8`);
+  };
+
+  const exportReportCsv = (report, reportCandidates) => {
+    const rows = reportRows(reportCandidates);
+    const header = ['#', 'Aday', 'İlan uyumu', 'Profil kalitesi', 'Nihai skor', 'Karşılanan nitelikler', 'Eksik / teyit', 'Değerlendirme'];
+    const lines = [header, ...rows.map(row => [row.number, row.name, `%${row.match}`, `%${row.quality}`, `%${row.final}`, row.matched || 'Yok', row.missing || 'Yok', row.evaluation])];
+    const csv = '\ufeff' + lines.map(line => line.map(csvCell).join(';')).join('\r\n');
+    const baseName = (report.title || 'IKAI-raporu').replace(/[^a-z0-9ğüşöçıİĞÜŞÖÇ_-]+/gi, '-').replace(/-+/g, '-');
+    downloadFile(csv, `${baseName}.csv`, 'text/csv;charset=utf-8');
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -358,11 +426,12 @@ export default function Reports() {
                 <button onClick={() => openReport(report)} className="flex-1 py-2 rounded-xl text-sm font-medium text-primary-600 hover:bg-primary-50 flex items-center justify-center gap-1.5">
                   <Eye className="w-4 h-4" /> Detay
                 </button>
-                {deleteConfirmId !== report.id && (
-                  <button onClick={() => exportReportPdf(report, report.matched_candidates || [])} className="p-2 rounded-xl text-primary-500 hover:bg-primary-50" title="PDF indir">
-                    <Download className="w-4 h-4" />
-                  </button>
-                )}
+                {deleteConfirmId !== report.id && <ExportMenu
+                  onPdf={() => exportReportPdf(report, report.matched_candidates || [])}
+                  onWord={() => exportEditableTable(report, report.matched_candidates || [], 'word')}
+                  onExcel={() => exportEditableTable(report, report.matched_candidates || [], 'excel')}
+                  onCsv={() => exportReportCsv(report, report.matched_candidates || [])}
+                />}
                 <SlideDeleteConfirm
                   onConfirm={() => handleDelete(report.id)}
                   onOpenChange={isOpen => setDeleteConfirmId(isOpen ? report.id : null)}
@@ -386,9 +455,12 @@ export default function Reports() {
                 {companyLogo && <img src={companyLogo} alt="Şirket logosu" className="h-16 w-28 shrink-0 object-contain" />}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => exportReportPdf(viewingReport, draftCandidates, true)} className="px-3 py-2 rounded-xl text-sm font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 flex items-center gap-2">
-                  <Download className="w-4 h-4" /> PDF İndir
-                </button>
+                <ExportMenu
+                  onPdf={() => exportReportPdf(viewingReport, draftCandidates, true)}
+                  onWord={() => exportEditableTable(viewingReport, draftCandidates, 'word')}
+                  onExcel={() => exportEditableTable(viewingReport, draftCandidates, 'excel')}
+                  onCsv={() => exportReportCsv(viewingReport, draftCandidates)}
+                />
                 <button onClick={() => setViewingReport(null)} className="p-2 hover:bg-surface-100 rounded-xl"><X className="w-5 h-5 text-gray-400" /></button>
               </div>
             </div>
