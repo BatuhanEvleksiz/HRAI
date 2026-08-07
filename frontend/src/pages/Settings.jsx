@@ -321,7 +321,7 @@ export default function SettingsPage() {
         <div className="space-y-3">
           {[
             { name: 'NVIDIA NeMo (OCR)', description: 'PDF\'den metin çıkarma', key: 'NVIDIA_API_KEY' },
-            { name: 'Gemini 1.5 Flash (AI)', description: 'Semantik analiz ve chatbot', key: 'GEMINI_API_KEY' },
+            { name: 'Gemini Flash (AI)', description: 'Semantik analiz ve chatbot', key: 'GEMINI_API_KEY' },
             { name: 'Supabase (Veritabanı)', description: 'PostgreSQL veritabanı', key: 'SUPABASE_URL' },
           ].map(service => (
             <div key={service.key} className="flex items-center justify-between p-4 bg-surface-50 rounded-xl border border-surface-200">
