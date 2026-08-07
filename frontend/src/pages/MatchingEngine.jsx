@@ -35,14 +35,14 @@ const AVAILABLE_SKILLS = [
 ];
 
 const AVAILABLE_LANGUAGES = [
-  { value: 'ingilizce', label: 'İngilizce', flag: '🇬🇧' },
-  { value: 'almanca', label: 'Almanca', flag: '🇩🇪' },
-  { value: 'fransızca', label: 'Fransızca', flag: '🇫🇷' },
-  { value: 'ispanyolca', label: 'İspanyolca', flag: '🇪🇸' },
-  { value: 'türkçe', label: 'Türkçe', flag: '🇹🇷' },
-  { value: 'italyanca', label: 'İtalyanca', flag: '🇮🇹' },
-  { value: 'arapça', label: 'Arapça', flag: '🇸🇦' },
-  { value: 'rusça', label: 'Rusça', flag: '🇷🇺' },
+  { value: 'ingilizce', label: 'İngilizce', flag: '\u{1F1EC}\u{1F1E7}' },
+  { value: 'almanca', label: 'Almanca', flag: '\u{1F1E9}\u{1F1EA}' },
+  { value: 'fransızca', label: 'Fransızca', flag: '\u{1F1EB}\u{1F1F7}' },
+  { value: 'ispanyolca', label: 'İspanyolca', flag: '\u{1F1EA}\u{1F1F8}' },
+  { value: 'türkçe', label: 'Türkçe', flag: '\u{1F1F9}\u{1F1F7}' },
+  { value: 'italyanca', label: 'İtalyanca', flag: '\u{1F1EE}\u{1F1F9}' },
+  { value: 'arapça', label: 'Arapça', flag: '\u{1F1F8}\u{1F1E6}' },
+  { value: 'rusça', label: 'Rusça', flag: '\u{1F1F7}\u{1F1FA}' },
 ];
 const LANGUAGE_LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'];
 const LEVEL_ORDER = { 'a1': 1, 'a2': 2, 'b1': 3, 'b2': 4, 'c1': 5, 'c2': 6 };
@@ -128,7 +128,7 @@ export default function MatchingEngine() {
 
   // Language selection
   const [langToAdd, setLangToAdd] = useState('');
-  const [levelToAdd, setLevelToAdd] = useState('b2');
+  const [levelToAdd, setLevelToAdd] = useState('');
   const [languageSearch, setLanguageSearch] = useState('');
   const [languageOpen, setLanguageOpen] = useState(false);
 
@@ -143,7 +143,7 @@ export default function MatchingEngine() {
   const weightsValid = totalWeight === 100;
 
   const addLanguage = () => {
-    if (!langToAdd) return;
+    if (!langToAdd || !levelToAdd) return;
     if (!selectedLanguages.find(l => l.language === langToAdd)) {
       setSelectedLanguages([...selectedLanguages, { language: langToAdd, level: levelToAdd }]);
     }
@@ -553,7 +553,8 @@ export default function MatchingEngine() {
                 </div>
               </div>}
             </div>
-            <select value={levelToAdd} onChange={(e) => setLevelToAdd(e.target.value)} className="antigravity-select w-24">
+            <select value={levelToAdd} onChange={(e) => setLevelToAdd(e.target.value)} className="antigravity-select w-36">
+              <option value="" disabled>Seviye seçiniz</option>
               {LANGUAGE_LEVELS.map(l => <option key={l} value={l}>{l.toUpperCase()}</option>)}
             </select>
             <button type="button" onClick={addLanguage} className="px-4 py-2.5 rounded-xl bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors">
