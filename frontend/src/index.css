@@ -160,21 +160,26 @@
 
 .language-flag {
   display: inline-block;
+  position: relative;
   width: 22px;
-  height: 15px;
+  height: 14px;
   flex: 0 0 auto;
   border: 1px solid rgba(31, 41, 55, 0.12);
-  border-radius: 2px;
-  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.12);
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(31, 41, 55, 0.16);
+  overflow: hidden;
   background: #e5e7eb;
 }
 .language-flag-gb { background: linear-gradient(90deg, transparent 42%, #fff 42% 58%, #d72828 58% 66%, #fff 66% 74%, transparent 74%), linear-gradient(0deg, transparent 38%, #fff 38% 62%, #d72828 62% 72%, #fff 72% 82%, transparent 82%), #1f4e9b; }
 .language-flag-de { background: linear-gradient(#1f2937 0 33%, #d11f2f 33% 66%, #f2c94c 66%); }
 .language-flag-fr { background: linear-gradient(90deg, #1d4ed8 0 33%, #fff 33% 66%, #ef4444 66%); }
 .language-flag-es { background: linear-gradient(#d62828 0 25%, #f6c945 25% 75%, #d62828 75%); }
-.language-flag-tr { background: radial-gradient(circle at 42% 50%, #fff 0 27%, transparent 29%), radial-gradient(circle at 49% 50%, #e52b3a 0 21%, transparent 23%), #e52b3a; }
+.language-flag-tr { background: #e30a17; }
+.language-flag-tr::before { content: ''; position: absolute; left: 5px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.language-flag-tr::after { content: ''; position: absolute; left: 7px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: #e30a17; box-shadow: 5px 3px 0 -2px #fff; }
 .language-flag-it { background: linear-gradient(90deg, #15803d 0 33%, #fff 33% 66%, #d62828 66%); }
 .language-flag-sa { background: #166534; }
+.language-flag-sa::after { content: ''; position: absolute; left: 4px; right: 4px; top: 8px; height: 1px; background: rgba(255,255,255,.9); }
 .language-flag-ru { background: linear-gradient(#fff 0 33%, #2563eb 33% 66%, #dc2626 66%); }
 .language-flag-default { background: linear-gradient(135deg, #dbeafe, #94a3b8); }
 
