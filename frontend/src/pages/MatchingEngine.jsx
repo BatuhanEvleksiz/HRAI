@@ -56,7 +56,7 @@ const AVAILABLE_UNIVERSITIES = [
 const WEIGHT_STYLE = Object.fromEntries(WEIGHT_CONFIG.map(item => [item.key, item]));
 
 function LanguageFlag({ code }) {
-  return <span className={`language-flag language-flag-${code || 'default'}`} aria-hidden="true" />;
+  return <img src={`/flags/${code || 'default'}.svg`} alt="" className="language-flag" aria-hidden="true" />;
 }
 
 function InlineWeightSlider({ weightKey, weights, onChange }) {
