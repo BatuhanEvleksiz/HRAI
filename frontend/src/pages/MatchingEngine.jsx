@@ -34,7 +34,16 @@ const AVAILABLE_SKILLS = [
   'leadership', 'teamwork', 'communication', 'problem solving', 'time management'
 ];
 
-const AVAILABLE_LANGUAGES = ['ingilizce', 'almanca', 'fransızca', 'ispanyolca', 'türkçe'];
+const AVAILABLE_LANGUAGES = [
+  { value: 'ingilizce', label: 'İngilizce', flag: '🇬🇧' },
+  { value: 'almanca', label: 'Almanca', flag: '🇩🇪' },
+  { value: 'fransızca', label: 'Fransızca', flag: '🇫🇷' },
+  { value: 'ispanyolca', label: 'İspanyolca', flag: '🇪🇸' },
+  { value: 'türkçe', label: 'Türkçe', flag: '🇹🇷' },
+  { value: 'italyanca', label: 'İtalyanca', flag: '🇮🇹' },
+  { value: 'arapça', label: 'Arapça', flag: '🇸🇦' },
+  { value: 'rusça', label: 'Rusça', flag: '🇷🇺' },
+];
 const LANGUAGE_LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'];
 const LEVEL_ORDER = { 'a1': 1, 'a2': 2, 'b1': 3, 'b2': 4, 'c1': 5, 'c2': 6 };
 
@@ -118,8 +127,10 @@ export default function MatchingEngine() {
   const [llmKeywords, setLlmKeywords] = useState([]);
 
   // Language selection
-  const [langToAdd, setLangToAdd] = useState('ingilizce');
+  const [langToAdd, setLangToAdd] = useState('');
   const [levelToAdd, setLevelToAdd] = useState('b2');
+  const [languageSearch, setLanguageSearch] = useState('');
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   // Results
   const [results, setResults] = useState(null);
@@ -132,6 +143,7 @@ export default function MatchingEngine() {
   const weightsValid = totalWeight === 100;
 
   const addLanguage = () => {
+    if (!langToAdd) return;
     if (!selectedLanguages.find(l => l.language === langToAdd)) {
       setSelectedLanguages([...selectedLanguages, { language: langToAdd, level: levelToAdd }]);
     }
@@ -140,6 +152,11 @@ export default function MatchingEngine() {
   const removeLanguage = (lang) => {
     setSelectedLanguages(selectedLanguages.filter(l => l.language !== lang));
   };
+
+  const languageOption = value => AVAILABLE_LANGUAGES.find(language => language.value === value);
+  const visibleLanguages = AVAILABLE_LANGUAGES.filter(language =>
+    language.label.toLocaleLowerCase('tr-TR').includes(languageSearch.trim().toLocaleLowerCase('tr-TR'))
+  );
 
   const toggleSkill = (skill) => {
     if (selectedSkills.includes(skill)) {
@@ -514,19 +531,32 @@ export default function MatchingEngine() {
           <div className="flex flex-wrap gap-2 mb-3">
             {selectedLanguages.map(lang => (
               <span key={lang.language} className="pill pill-purple flex items-center gap-1">
-                {capitalize(lang.language)} — {lang.level.toUpperCase()} ve üstü
+                {languageOption(lang.language)?.flag || '🌐'} {languageOption(lang.language)?.label || capitalize(lang.language)} — {lang.level.toUpperCase()} ve üstü
                 <X className="w-3 h-3 cursor-pointer hover:text-danger-500" onClick={() => removeLanguage(lang.language)} />
               </span>
             ))}
           </div>
-          <div className="flex gap-2 items-center">
-            <select value={langToAdd} onChange={(e) => setLangToAdd(e.target.value)} className="antigravity-select w-40">
-              {AVAILABLE_LANGUAGES.map(l => <option key={l} value={l}>{capitalize(l)}</option>)}
-            </select>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-56">
+              <button type="button" onClick={() => setLanguageOpen(open => !open)} className="flex w-full items-center justify-between rounded-xl border border-surface-200 bg-white px-3 py-2.5 text-sm text-gray-700 shadow-sm hover:border-primary-300" aria-expanded={languageOpen}>
+                <span className="flex items-center gap-2"><span>{languageOption(langToAdd)?.flag || '🌐'}</span>{languageOption(langToAdd)?.label || 'Dil seçin'}</span>
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${languageOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {languageOpen && <div className="absolute left-0 right-0 top-full z-30 mt-2 rounded-xl border border-surface-200 bg-white p-2 shadow-xl">
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input autoFocus value={languageSearch} onChange={event => setLanguageSearch(event.target.value)} placeholder="Dil ara..." className="antigravity-input w-full pl-9" />
+                </div>
+                <div className="max-h-52 overflow-y-auto">
+                  {visibleLanguages.map(language => <button type="button" key={language.value} onClick={() => { setLangToAdd(language.value); setLanguageOpen(false); setLanguageSearch(''); }} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-primary-50 ${langToAdd === language.value ? 'bg-primary-50 text-primary-700' : 'text-gray-700'}`}><span className="text-lg">{language.flag}</span><span>{language.label}</span>{langToAdd === language.value && <CheckCircle className="ml-auto h-4 w-4 text-primary-500" />}</button>)}
+                  {!visibleLanguages.length && <p className="px-3 py-3 text-center text-xs text-gray-400">Dil bulunamadı.</p>}
+                </div>
+              </div>}
+            </div>
             <select value={levelToAdd} onChange={(e) => setLevelToAdd(e.target.value)} className="antigravity-select w-24">
               {LANGUAGE_LEVELS.map(l => <option key={l} value={l}>{l.toUpperCase()}</option>)}
             </select>
-            <button onClick={addLanguage} className="px-4 py-2.5 rounded-xl bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors">
+            <button type="button" onClick={addLanguage} className="px-4 py-2.5 rounded-xl bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors">
               Ekle
             </button>
           </div>
