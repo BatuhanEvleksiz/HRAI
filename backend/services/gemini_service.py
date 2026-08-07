@@ -1,4 +1,6 @@
 import os
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 import google.generativeai as genai
 import json
 import re
@@ -119,11 +121,29 @@ def analyze_cv(text: str) -> dict:
         raise RuntimeError(f"Gemini CV analizi çalışmadı: {type(exc).__name__}: {exc}") from exc
 
 
-def get_gemini_status() -> dict:
-    return {
-        "configured": bool(api_key and "your_" not in api_key),
-        "model": GEMINI_MODEL,
-    }
+def get_gemini_status(test: bool = False) -> dict:
+    configured = bool(api_key and "your_" not in api_key)
+    result = {"configured": configured, "model": GEMINI_MODEL, "checked": test}
+    if not configured:
+        result["state"] = "missing"
+        result["error"] = "GEMINI_API_KEY eksik."
+        return result
+    if not test:
+        result["state"] = "configured"
+        return result
+    try:
+        request = Request(
+            f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}",
+            headers={"Accept": "application/json"},
+        )
+        with urlopen(request, timeout=8) as response:
+            models = response.read()
+        result["state"] = "connected"
+        result["available_models"] = len(__import__("json").loads(models).get("models", []))
+    except (HTTPError, URLError, TimeoutError, ValueError) as exc:
+        result["state"] = "unreachable"
+        result["error"] = f"{type(exc).__name__}: {exc}"[:240]
+    return result
 
 def generate_match_comment(candidate: dict, requirements: dict, score: float) -> str:
     if not api_key or "your_" in api_key:

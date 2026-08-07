@@ -14,6 +14,9 @@ export default function SettingsPage() {
   const [logoDraft, setLogoDraft] = useState(() => localStorage.getItem('ikai-company-logo') || '');
   const [logoSaved, setLogoSaved] = useState(false);
   const [logoError, setLogoError] = useState('');
+  const [apiStatus, setApiStatus] = useState(null);
+  const [apiStatusLoading, setApiStatusLoading] = useState(false);
+  const [apiStatusError, setApiStatusError] = useState('');
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-pink', theme === 'pink');
@@ -23,6 +26,28 @@ export default function SettingsPage() {
   useEffect(() => {
     setLocalWeights({ ...weights });
   }, [weights]);
+
+  useEffect(() => {
+    api.getApiStatus().then(setApiStatus).catch(() => setApiStatusError('API durumları alınamadı.'));
+  }, []);
+
+  const testApiStatus = async () => {
+    setApiStatusLoading(true);
+    setApiStatusError('');
+    try { setApiStatus(await api.getApiStatus(true)); }
+    catch (error) { setApiStatusError(error.message || 'Bağlantı testi başarısız.'); }
+    finally { setApiStatusLoading(false); }
+  };
+
+  const statusLabel = (service) => {
+    if (!service) return 'Kontrol ediliyor';
+    if (service.state === 'connected') return 'Bağlı';
+    if (service.state === 'unreachable') return 'Erişilemiyor';
+    if (service.state === 'missing') return 'Eksik';
+    return 'Yapılandırıldı';
+  };
+
+  const statusClass = (service) => service?.state === 'connected' ? 'pill pill-green' : service?.state === 'unreachable' || service?.state === 'missing' ? 'pill pill-red' : 'pill pill-yellow';
 
   const total = Object.values(localWeights).reduce((a, b) => a + b, 0);
   const isValid = total === 100;
@@ -285,24 +310,31 @@ export default function SettingsPage() {
       {/* API Configuration */}
       <div className="antigravity-card-static p-6 space-y-4">
         <h2 className="text-lg font-bold text-gray-800">API Yapılandırması</h2>
-        <p className="text-xs text-gray-400">API anahtarlarını backend <code>.env</code> dosyasından yapılandırın.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-gray-400">Anahtarlar backend ortam değişkenlerinden okunur; değerler bu ekranda gösterilmez.</p>
+          <button type="button" onClick={testApiStatus} disabled={apiStatusLoading} className="antigravity-button text-xs disabled:opacity-60">
+            {apiStatusLoading ? 'Kontrol ediliyor...' : 'Bağlantıları test et'}
+          </button>
+        </div>
+        {apiStatusError && <p className="text-xs text-red-500">{apiStatusError}</p>}
 
         <div className="space-y-3">
           {[
             { name: 'NVIDIA NeMo (OCR)', description: 'PDF\'den metin çıkarma', key: 'NVIDIA_API_KEY' },
             { name: 'Gemini 1.5 Flash (AI)', description: 'Semantik analiz ve chatbot', key: 'GEMINI_API_KEY' },
             { name: 'Supabase (Veritabanı)', description: 'PostgreSQL veritabanı', key: 'SUPABASE_URL' },
-          ].map(api => (
-            <div key={api.key} className="flex items-center justify-between p-4 bg-surface-50 rounded-xl border border-surface-200">
+          ].map(service => (
+            <div key={service.key} className="flex items-center justify-between p-4 bg-surface-50 rounded-xl border border-surface-200">
               <div className="flex items-center gap-3">
                 <Key className="w-4 h-4 text-gray-400" />
                 <div>
-                  <p className="text-sm font-medium text-gray-700">{api.name}</p>
-                  <p className="text-xs text-gray-400">{api.description}</p>
+                  <p className="text-sm font-medium text-gray-700">{service.name}</p>
+                  <p className="text-xs text-gray-400">{service.description}</p>
+                  {apiStatus?.[{ 'NVIDIA_API_KEY': 'nvidia', 'GEMINI_API_KEY': 'gemini', 'SUPABASE_URL': 'supabase' }[service.key]]?.error && <p className="mt-1 max-w-xl text-xs text-red-500">{apiStatus[{ 'NVIDIA_API_KEY': 'nvidia', 'GEMINI_API_KEY': 'gemini', 'SUPABASE_URL': 'supabase' }[service.key]].error}</p>}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="pill pill-yellow">Demo Mod</span>
+                <span className={statusClass(apiStatus?.[{ 'NVIDIA_API_KEY': 'nvidia', 'GEMINI_API_KEY': 'gemini', 'SUPABASE_URL': 'supabase' }[service.key]])}>{statusLabel(apiStatus?.[{ 'NVIDIA_API_KEY': 'nvidia', 'GEMINI_API_KEY': 'gemini', 'SUPABASE_URL': 'supabase' }[service.key]])}</span>
               </div>
             </div>
           ))}

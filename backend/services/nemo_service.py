@@ -1,6 +1,8 @@
 import base64
 import json
 import os
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 import re
 from io import BytesIO
 
@@ -202,9 +204,26 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     return extract_document_from_pdf(file_bytes)["text"]
 
 
-def get_nvidia_status() -> dict:
+def get_nvidia_status(test: bool = False) -> dict:
     api_key = (os.getenv("NVIDIA_API_KEY") or "").strip()
-    return {
-        "configured": bool(api_key and "your_" not in api_key),
-        "model": NVIDIA_MODEL,
-    }
+    configured = bool(api_key and "your_" not in api_key)
+    result = {"configured": configured, "model": NVIDIA_MODEL, "checked": test}
+    if not configured:
+        result["state"] = "missing"
+        result["error"] = "NVIDIA_API_KEY eksik."
+        return result
+    if not test:
+        result["state"] = "configured"
+        return result
+    try:
+        request = Request(
+            "https://integrate.api.nvidia.com/v1/models",
+            headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
+        )
+        with urlopen(request, timeout=8) as response:
+            response.read()
+        result["state"] = "connected"
+    except (HTTPError, URLError, TimeoutError) as exc:
+        result["state"] = "unreachable"
+        result["error"] = f"{type(exc).__name__}: {exc}"[:240]
+    return result

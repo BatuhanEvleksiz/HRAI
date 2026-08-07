@@ -127,6 +127,7 @@ export const api = {
   getChatHistory: () => request('/chatbot/history'),
 
   // Settings
+  getApiStatus: (test = false) => request(`/settings/api-status${test ? '?test=true' : ''}`),
   getWeights: () => request('/settings/weights'),
   updateWeights: (data) => request('/settings/weights', { method: 'PUT', body: JSON.stringify(data) }),
 };
