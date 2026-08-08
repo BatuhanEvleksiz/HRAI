@@ -1061,3 +1061,23 @@ body {
 :root.theme-dark .assistant-bot-icon svg {
   color: #f8f9fa !important;
 }
+
+:root.theme-dark .candidate-note-preview {
+  background: #343a40 !important;
+  border: 1px solid #6c757d;
+  color: #f8f9fa !important;
+}
+
+:root.theme-dark .candidate-note-preview:hover {
+  background: #495057 !important;
+}
+
+:root.theme-dark .candidate-note-editor {
+  background: #212529 !important;
+  border-color: #6c757d !important;
+  color: #f8f9fa !important;
+}
+
+:root.theme-dark .candidate-note-editor::placeholder {
+  color: #adb5bd !important;
+}

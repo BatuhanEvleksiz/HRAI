@@ -183,11 +183,11 @@ export default function SavedCVs() {
 
               {openNoteId === candidate.id && <div className="rounded-xl border border-warning-200 bg-warning-50/50 p-3">
                 <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-warning-700"><StickyNote className="h-3.5 w-3.5" /> İK notu</div>
-                <textarea value={noteDraft} onChange={event => setNoteDraft(event.target.value)} rows={3} autoFocus placeholder="Adayla ilgili kısa bir hatırlatma yazın..." className="w-full resize-y rounded-lg border border-warning-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-warning-400" />
+                <textarea value={noteDraft} onChange={event => setNoteDraft(event.target.value)} rows={3} autoFocus placeholder="Adayla ilgili kısa bir hatırlatma yazın..." className="candidate-note-editor w-full resize-y rounded-lg border border-warning-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-warning-400" />
                 <div className="mt-2 flex justify-end gap-2"><button type="button" onClick={() => setOpenNoteId(null)} className="rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-white">İptal</button><button type="button" onClick={() => saveCandidateNote(candidate.id)} disabled={savingNoteId === candidate.id} className="inline-flex items-center gap-1.5 rounded-lg bg-warning-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"><Save className="h-3.5 w-3.5" />{savingNoteId === candidate.id ? 'Kaydediliyor...' : 'Notu kaydet'}</button></div>
               </div>}
 
-              {candidate.hr_notes && openNoteId !== candidate.id && <button type="button" onClick={() => openCandidateNote(candidate)} className="flex w-full items-start gap-2 rounded-lg bg-warning-50 px-3 py-2 text-left text-xs text-warning-800 hover:bg-warning-100"><StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span className="line-clamp-2">{candidate.hr_notes}</span></button>}
+              {candidate.hr_notes && openNoteId !== candidate.id && <button type="button" onClick={() => openCandidateNote(candidate)} className="candidate-note-preview flex w-full items-start gap-2 rounded-lg bg-warning-50 px-3 py-2 text-left text-xs text-warning-800 hover:bg-warning-100"><StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span className="line-clamp-2">{candidate.hr_notes}</span></button>}
 
               {/* Info */}
               <div className="text-sm text-gray-500 space-y-1">
