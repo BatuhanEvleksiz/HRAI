@@ -4,13 +4,13 @@ import { Users, CheckCircle2, XCircle, Clock, CalendarDays, TrendingUp, ChevronR
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Sector } from 'recharts';
 
 const barColors = [
-  'rgb(var(--primary-500))',
-  'rgb(var(--accent-600))',
-  'rgb(var(--accent-500))',
-  'rgb(var(--primary-300))',
-  'rgb(var(--accent-400))',
-  'rgb(var(--primary-400))',
-  'rgb(var(--primary-600))',
+  'rgb(var(--chart-1))',
+  'rgb(var(--chart-2))',
+  'rgb(var(--chart-3))',
+  'rgb(var(--chart-4))',
+  'rgb(var(--chart-5))',
+  'rgb(var(--chart-6))',
+  'rgb(var(--chart-7))',
 ];
 
 const statusColors = {
@@ -48,7 +48,7 @@ function BarTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   const item = payload[0].payload;
   return (
-    <div className="rounded-xl border border-surface-200 bg-white/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
+    <div className="dashboard-chart-tooltip rounded-xl border border-surface-200 bg-white/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
       <p className="font-semibold text-gray-800">{label}</p>
       <p className="mt-1 text-gray-500">{item.count} aday · %{item.percentage}</p>
     </div>
@@ -59,7 +59,7 @@ function DonutTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const item = payload[0].payload;
   return (
-    <div className="rounded-xl border border-surface-200 bg-white/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
+    <div className="dashboard-chart-tooltip rounded-xl border border-surface-200 bg-white/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
       <p className="font-semibold text-gray-800">{item.name}</p>
       <p className="mt-1 text-gray-500">{item.value} aday · %{item.percentage}</p>
     </div>

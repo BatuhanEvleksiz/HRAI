@@ -37,6 +37,13 @@
   --language-700: 35 71 157;
   --language-800: 24 49 110;
   --language-900: 16 32 70;
+  --chart-1: 27 78 245;
+  --chart-2: 56 116 255;
+  --chart-3: 89 150 255;
+  --chart-4: 143 181 255;
+  --chart-5: 112 165 255;
+  --chart-6: 89 150 255;
+  --chart-7: 23 67 209;
 }
 
 /* Internal job board and reusable batch ingestion */
@@ -957,6 +964,13 @@ body {
   --language-700: 206 212 218;
   --language-800: 173 181 189;
   --language-900: 108 117 125;
+  --chart-1: 89 150 255;
+  --chart-2: 112 165 255;
+  --chart-3: 143 181 255;
+  --chart-4: 173 181 189;
+  --chart-5: 89 150 255;
+  --chart-6: 56 116 255;
+  --chart-7: 206 212 218;
 }
 
 :root.theme-dark .antigravity-card,
@@ -979,6 +993,10 @@ body {
 :root.theme-dark .dashboard-recent-item { border-color: rgba(255, 255, 255, 0.1); }
 :root.theme-dark .dashboard-recent-item:hover { background: rgba(var(--primary-900), 0.35); }
 :root.theme-dark .dashboard-recent-item .text-gray-800 { color: #f8f9fa; }
+:root.theme-dark .dashboard-recent-avatar { background: #343a40; color: #f8f9fa; border: 1px solid #6c757d; }
+:root.theme-dark .dashboard-chart-tooltip { background: #212529 !important; border-color: #6c757d !important; color: #f8f9fa; }
+:root.theme-dark .dashboard-chart-tooltip .text-gray-800 { color: #f8f9fa !important; }
+:root.theme-dark .dashboard-chart-tooltip .text-gray-500 { color: #ced4da !important; }
 
 :root.theme-dark .glass-panel {
   background: rgba(31, 37, 45, 0.78);
