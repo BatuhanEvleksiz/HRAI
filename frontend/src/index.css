@@ -1051,3 +1051,13 @@ body {
 :root.theme-dark .text-language-600 {
   color: #e9ecef !important;
 }
+
+:root.theme-dark .assistant-bot-icon {
+  background: #343a40 !important;
+  border: 1px solid #6c757d;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.24);
+}
+
+:root.theme-dark .assistant-bot-icon svg {
+  color: #f8f9fa !important;
+}

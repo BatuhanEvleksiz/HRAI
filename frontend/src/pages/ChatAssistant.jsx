@@ -78,7 +78,7 @@ export default function ChatAssistant() {
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {chatMessages.length === 0 && (
             <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-primary-500 flex items-center justify-center mx-auto mb-4">
+              <div className="assistant-bot-icon w-16 h-16 rounded-2xl bg-primary-500 flex items-center justify-center mx-auto mb-4">
                 <Bot className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-bold text-gray-700 mb-2">Merhaba! Ben İK Asistanınız 👋</h3>
@@ -107,7 +107,7 @@ export default function ChatAssistant() {
               className={`chat-message flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-xl bg-primary-500 flex items-center justify-center flex-shrink-0">
+                <div className="assistant-bot-icon w-8 h-8 rounded-xl bg-primary-500 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
               )}
@@ -130,7 +130,7 @@ export default function ChatAssistant() {
 
           {isTyping && (
             <div className="flex gap-3 items-start chat-message">
-              <div className="w-8 h-8 rounded-xl bg-primary-500 flex items-center justify-center">
+              <div className="assistant-bot-icon w-8 h-8 rounded-xl bg-primary-500 flex items-center justify-center">
                 <Bot className="w-4 h-4 text-white" />
               </div>
               <div className="bg-surface-50 p-4 rounded-2xl rounded-bl-md border border-surface-200">
